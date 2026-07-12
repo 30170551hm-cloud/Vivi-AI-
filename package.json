@@ -4,12 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
+    "vercel-build": "vite build",
+    "preview": "vite preview --host",
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
-    "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "typecheck": "tsc -p ./jsconfig.json"
   },
   "dependencies": {
     "firebase": "^10.7.1",
