@@ -37,15 +37,12 @@ export const AuthProvider = ({ children }) => {
 
       // El SDK de Base44 ya no es una dependencia estática — se carga solo
       // en esta rama, que únicamente corre cuando Base44 está configurado.
-      let createAxiosClient;
-      try {
-        ({ createAxiosClient } = await import(/* @vite-ignore */ '@base44/sdk/dist/utils/axios-client'));
-      } catch {
-        console.error('[AuthContext] Base44 configurado pero @base44/sdk no está instalado — cayendo a verificación de usuario directa.');
-        setIsLoadingPublicSettings(false);
-        await checkUserAuth();
-        return;
-      }
+      let createAxiosClient = null;
+
+console.log('[AuthContext] Base44 deshabilitado. Usando Firebase.');
+setIsLoadingPublicSettings(false);
+await checkUserAuth();
+return;
 
       // First, check app public settings (with token if available)
       // This will tell us if auth is required, user not registered, etc.
