@@ -1,4 +1,4 @@
-import { appParams } from "@/lib/app-params";
+import { appParams } from "../lib/app-params";
 
 const { appId } = appParams;
 
@@ -14,7 +14,6 @@ function createStub() {
             )}" pero Base44 está desactivado.`,
             args
           );
-
           return Promise.resolve(null);
         };
       },
