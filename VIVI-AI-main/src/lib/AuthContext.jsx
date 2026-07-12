@@ -112,30 +112,32 @@ try {
     }
   };
 
-  const checkUserAuth = async () => {
-    try {
-      // Now check if the user is authenticated
-      setIsLoadingAuth(true);
-      const currentUser = await authClient.me();
-      setUser(currentUser);
-      setIsAuthenticated(true);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-    } catch (error) {
-      console.error('User auth check failed:', error);
+const checkAppState = async () => {
+  try {
+    setIsLoadingPublicSettings(false);
+    setAuthError(null);
+
+    if (appParams.token) {
+      await checkUserAuth();
+    } else {
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
       setAuthChecked(true);
-      
-      // If user auth fails, it might be an expired token
-      if (error.status === 401 || error.status === 403) {
-        setAuthError({
-          type: 'auth_required',
-          message: 'Authentication required'
-        });
-      }
     }
-  };
+  } catch (error) {
+    console.error("Auth check failed:", error);
+
+    setAuthError({
+      type: "unknown",
+      message: error.message || "Authentication failed",
+    });
+
+    setIsLoadingPublicSettings(false);
+    setIsLoadingAuth(false);
+    setIsAuthenticated(false);
+    setAuthChecked(true);
+  }
+};
 
   const logout = (shouldRedirect = true) => {
     setUser(null);
