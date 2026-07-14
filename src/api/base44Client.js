@@ -1,13 +1,28 @@
-/**
- * Bridge file — re-exports the Firebase-backed backend as `base44`.
- * This allows all existing imports of `{ base44 } from '@/api/base44Client'`
- * to work without @base44/sdk, making the project fully portable.
- *
- * When running on Base44 (legacy), the real @base44/sdk is used instead.
- * When running standalone (GitHub/Vercel), the Firebase abstraction layer
- * in @/lib/backendClient is used.
- */
+// @ts-nocheck
 
-// Use Firebase abstraction layer (standalone mode)
-export { backend as base44 } from '@/lib/backendClient';
-export default { backend };
+const appId = import.meta.env.VITE_BASE44_APP_ID;
+
+function createStub() {
+  return new Proxy(
+    {},
+    {
+      get(target, prop) {
+        return (...args) => {
+          console.warn(
+            `[Base44 desabilitado] Se intentó usar "${String(prop)}" pero Base44 está desactivado.`,
+            args
+          );
+          return Promise.resolve(null);
+        };
+      },
+    }
+  );
+}
+
+if (!appId) {
+  console.warn(
+    "[Base44] No hay VITE_BASE44_APP_ID configurado. Vivi funcionará usando Firebase."
+  );
+}
+
+export const base44 = createStub();
