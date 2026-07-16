@@ -1,7 +1,7 @@
 # Auditoría de Dependencias — Vivi AI
 
 > Fecha: 2026-07-13
-> Repositorio: `30170551hm-cloud/Vivi-AI-`
+> Repositorio: `30170551hm-cloud/Vivi-AI-App`
 > Rama: `main`
 
 ## Criterios de Evaluación

@@ -4,7 +4,7 @@
 
 ### Automático (recomendado)
 
-1. Conecta tu repositorio `30170551hm-cloud/Vivi-AI-` a Vercel
+1. Conecta tu repositorio `30170551hm-cloud/Vivi-AI-App` a Vercel
 2. Vercel detecta automáticamente Vite:
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
@@ -55,7 +55,9 @@ firebase deploy --only functions
 ```bash
 firebase functions:secrets:set OPENAI_API_KEY
 firebase functions:secrets:set GEMINI_API_KEY
-firebase functions:secrets:set ELEVENLABS_API_KEY
+firebase functions:secrets:set GITHUB_TOKEN
+firebase functions:secrets:set REPO_EDIT_ALLOWLIST
+firebase functions:secrets:set REPO_EDIT_REQUIRE_APPROVAL
 ```
 
 ## Despliegue Firestore Rules

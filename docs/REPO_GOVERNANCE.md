@@ -1,7 +1,7 @@
 # Gobernanza del Repositorio — Vivi AI
 
 > **GitHub es la fuente única de verdad del proyecto Vivi AI.**
-> Repositorio oficial: `30170551hm-cloud/Vivi-AI-`
+> Repositorio oficial: `30170551hm-cloud/Vivi-AI-App`
 > Rama principal: `main`
 
 ---
@@ -76,7 +76,7 @@ Todas las dependencias están declaradas en `package.json`. No hay imports a paq
 ## Estructura del Repositorio
 
 ```
-Vivi-AI-/
+Vivi-AI-App/
 ├── .github/workflows/       # CI/CD pipelines
 ├── base44/                  # Esquemas de entidades (JSON)
 ├── docs/                    # Documentación técnica

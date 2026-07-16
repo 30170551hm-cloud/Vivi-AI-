@@ -4,7 +4,7 @@
 - **Runtime**: Firebase (Auth, Firestore, Storage, Functions)
 - **Deployment**: Vercel
 - **Source of truth**: This repository (main branch)
-- **Base44 dependency**: NONE (fully decoupled)
+- **Base44 dependency**: NONE (fully decoupled; only a compatibility bridge remains)
 
 ## Backend Functions (functions/index.js)
 | Endpoint | Purpose |
@@ -29,7 +29,7 @@ ViviUniversity, ViviAnalytics
 ## Firebase Abstraction Layer (src/lib/)
 | File | Replaces |
 |---|---|
-| backendClient.js | @/api/base44Client |
+| backendClient.js | legacy `@/api/base44Client` contract |
 | firebase.js | Base44 SDK init |
 | firebaseAuthAdapter.js | base44.auth.* |
 | firebaseEntities.js | base44.entities.* |
@@ -60,8 +60,9 @@ VoiceDiagnostic, Academia, SelfImprovement, VDEConsole, Chat, Memoria
 - [x] README with deployment guide
 - [x] Module registration in bootstrap
 - [x] Entity adapter updated with new collections
+- [x] Removed unused Base44 configuration and entity artifacts
+- [x] Verified npm install plus typecheck, lint, and build locally
 - [ ] Port remaining advanced modules (ViviSelfEvolution, ViviCertification, etc.)
-- [ ] Verify npm install + npm run build on CI
 - [ ] Deploy to Vercel
 - [ ] Configure Firebase secrets (OPENAI_API_KEY, GEMINI_API_KEY, GITHUB_TOKEN)
 
@@ -76,4 +77,4 @@ VoiceDiagnostic, Academia, SelfImprovement, VDEConsole, Chat, Memoria
 - docs: add migration status document
 
 ## Last Updated
-2026-07-13
+2026-07-16

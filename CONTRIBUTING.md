@@ -6,8 +6,8 @@ Gracias por tu interés en contribuir a Vivi AI. Este documento describe el proc
 
 1. Clona el repositorio:
 ```bash
-git clone https://github.com/30170551hm-cloud/Vivi-AI-.git
-cd Vivi-AI-
+git clone https://github.com/30170551hm-cloud/Vivi-AI-App.git
+cd Vivi-AI-App
 npm install
 ```
 
