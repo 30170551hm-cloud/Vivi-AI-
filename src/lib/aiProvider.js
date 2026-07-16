@@ -1,4 +1,4 @@
-// aiProvider.js — El cerebro de IA de Vivi, sin Base44.
+// aiProvider.js — El cerebro de IA de Vivi.
 //
 // Implementa el MISMO contrato que backend.integrations.Core.InvokeLLM
 // (verificado contra los 18+ call sites reales del proyecto):

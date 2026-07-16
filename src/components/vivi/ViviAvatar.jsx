@@ -4,7 +4,7 @@ import { Ear, Brain, Volume2, Loader2 } from 'lucide-react';
 import { EMOTION_AURA, EMOTION_EMOJI, normalizeEmotion } from '@/vivi/emotionConfig';
 import AvatarEyes from '@/components/vivi/AvatarEyes';
 
-const AVATAR_URL = 'https://media.base44.com/images/public/6a4d47f51ee7a49c8890fdcc/d7fbc6250_generated_image.png';
+const AVATAR_URL = '/vivi-icon.svg';
 const AVATAR_SIZE = 'w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72';
 
 // Cross-faded aura layers — each state has its own color layer.

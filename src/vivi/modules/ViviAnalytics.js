@@ -4,7 +4,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend as base44 } from '@/lib/backendClient';
+import { backend } from '@/lib/backendClient';
 
 export default class ViviAnalytics extends ModuleBase {
   constructor(bus) {
@@ -38,7 +38,7 @@ export default class ViviAnalytics extends ModuleBase {
   _track(eventName, properties = {}) {
     this._counters[eventName] = (this._counters[eventName] || 0) + 1;
     // Optional chaining — analytics may not be available in all backends
-    this.safe(() => base44.analytics?.track({ eventName, properties }));
+    this.safe(() => backend.analytics?.track({ eventName, properties }));
   }
 
   /** Get in-memory counters (useful for debugging / founder panel). */

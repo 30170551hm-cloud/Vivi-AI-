@@ -109,7 +109,7 @@ export default function VoiceDiagnostic() {
               <Row label="Plataforma" value={info.env?.platform || 'unknown'} />
               <Row label="Navegador" value={info.env?.browser || 'unknown'} />
               <Row label="En iframe" value={info.env?.inIframe ? 'Sí' : 'No'} />
-              <Row label="Vista previa builder" value={info.env?.isBase44Preview ? 'Sí' : 'No'} />
+              <Row label="Vista previa embebida" value={info.env?.isEmbeddedPreview ? 'Sí' : 'No'} />
             </dl>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -12,16 +13,16 @@ import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
-import Vivi from '@/pages/Vivi';
-import FounderPanel from '@/pages/FounderPanel';
-import VoiceDiagnostic from '@/pages/VoiceDiagnostic';
-import Academia from '@/pages/Academia';
-import SelfImprovement from '@/pages/SelfImprovement';
-import VDEConsole from '@/pages/VDEConsole';
-import Chat from '@/pages/Chat';
 import PageTransition from '@/components/PageTransition';
-import Memoria from '@/pages/Memoria';
-// Add page imports here
+
+const Vivi = lazy(() => import('@/pages/Vivi'));
+const FounderPanel = lazy(() => import('@/pages/FounderPanel'));
+const VoiceDiagnostic = lazy(() => import('@/pages/VoiceDiagnostic'));
+const Academia = lazy(() => import('@/pages/Academia'));
+const SelfImprovement = lazy(() => import('@/pages/SelfImprovement'));
+const VDEConsole = lazy(() => import('@/pages/VDEConsole'));
+const Chat = lazy(() => import('@/pages/Chat'));
+const Memoria = lazy(() => import('@/pages/Memoria'));
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -46,7 +47,8 @@ const AuthenticatedApp = () => {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Suspense fallback={<div className="fixed inset-0 flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>}>
+        <Routes location={location} key={location.pathname}>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -62,7 +64,8 @@ const AuthenticatedApp = () => {
           <Route path="/memoria" element={<Memoria />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
-      </Routes>
+        </Routes>
+      </Suspense>
     </AnimatePresence>
   );
 };

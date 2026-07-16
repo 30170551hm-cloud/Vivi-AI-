@@ -3,8 +3,7 @@
 // pero Node ESM puro no:
 //   1. Imports relativos sin extensión ('./EventBus' → './EventBus.js')
 //   2. El alias '@/x' definido en jsconfig.json → 'src/x'
-//   3. Redirige '@base44/sdk' (no instalado, sin red) a un MOCK explícito
-//   4. Neutraliza `import.meta.env` (global exclusivo de Vite) SOLO EN
+//   3. Neutraliza `import.meta.env` (global exclusivo de Vite) SOLO EN
 //      MEMORIA durante esta ejecución — el archivo real nunca se modifica
 import { existsSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -12,7 +11,6 @@ import path from 'node:path';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DIR = pathToFileURL(path.resolve(HERE, '../src') + '/');
-const MOCK_BASE44 = pathToFileURL(path.resolve(HERE, './MOCK_base44_sdk.mjs')).href;
 const MOCK_FIREBASE = pathToFileURL(path.resolve(HERE, './MOCK_firebase.mjs')).href;
 
 function findWithExtension(baseHref) {
@@ -25,9 +23,6 @@ function findWithExtension(baseHref) {
 }
 
 export async function resolve(specifier, context, nextResolve) {
-  if (specifier === '@base44/sdk' || specifier.startsWith('@base44/sdk/')) {
-    return nextResolve(MOCK_BASE44, context);
-  }
   if (specifier === 'firebase' || specifier.startsWith('firebase/')) {
     return nextResolve(MOCK_FIREBASE, context);
   }
@@ -63,12 +58,11 @@ export async function load(url, context, nextLoad) {
     // el caso real de "sin .env configurado"). Variables TEST_* permiten
     // simular configuraciones específicas por escenario de prueba.
     const envEntries = [];
-    if (process.env.TEST_BASE44_APPID) envEntries.push(`VITE_BASE44_APP_ID: ${JSON.stringify(process.env.TEST_BASE44_APPID)}`);
     if (process.env.TEST_FIREBASE_APIKEY) envEntries.push(`VITE_FIREBASE_API_KEY: ${JSON.stringify(process.env.TEST_FIREBASE_APIKEY)}`);
     if (process.env.TEST_FIREBASE_AUTHDOMAIN) envEntries.push(`VITE_FIREBASE_AUTH_DOMAIN: ${JSON.stringify(process.env.TEST_FIREBASE_AUTHDOMAIN)}`);
         if (process.env.TEST_GEMINI_KEY) envEntries.push(`VITE_GEMINI_API_KEY: ${JSON.stringify(process.env.TEST_GEMINI_KEY)}`);
     if (process.env.TEST_FIREBASE_PROJECTID) envEntries.push(`VITE_FIREBASE_PROJECT_ID: ${JSON.stringify(process.env.TEST_FIREBASE_PROJECTID)}`);
-    const fakeEnv = `({ ${envEntries.join(', ')} })`;
+    const fakeEnv = `({ DEV: true, ${envEntries.join(', ')} })`;
     const patched = sourceText.replaceAll('import.meta.env', fakeEnv);
     return { ...result, source: patched };
   }

@@ -4,7 +4,7 @@
 // Este adaptador NO usa hashing criptográfico real ni servidor — guarda
 // usuarios en localStorage del navegador, en texto plano. Es intencional:
 // existe únicamente para que la aplicación sea usable de punta a punta
-// mientras no haya Base44 ni Firebase configurados. NUNCA debe usarse así
+// mientras no haya Firebase configurado. NUNCA debe usarse así
 // en producción con datos reales de usuarios. Cuando actives Firebase
 // (VITE_FIREBASE_API_KEY en .env), este adaptador deja de usarse
 // automáticamente — ver src/lib/authMode.js.
@@ -102,7 +102,7 @@ export const localAuthAdapter = {
 
   /** Google OAuth no está disponible en modo local — se informa claramente, no se rompe. */
   async loginWithProvider() {
-    throw new Error('Continuar con Google requiere Base44 o Firebase configurado. Usa email y contraseña mientras tanto.');
+    throw new Error('Continuar con Google requiere Firebase configurado. Usa email y contraseña mientras tanto.');
   },
 
   async resetPasswordRequest(email) {

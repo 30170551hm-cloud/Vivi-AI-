@@ -7,7 +7,7 @@
 //   • Extracts facts autonomously from every conversation turn
 //   • Recalls relevant context based on the current conversation topic
 //   • Supports export/import for full memory portability
-//   • Each user's memory is isolated by Base44 row-level security (created_by_id)
+//   • Each user's memory is isolated by Firestore owner rules (ownerId)
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';

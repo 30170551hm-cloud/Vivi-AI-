@@ -1,9 +1,9 @@
 // firebaseEntities.js â Adaptador Firestore que replica la forma exacta de la
-// API `backend.entities.<Nombre>.*` usada hoy por ViviMemory.js y useChat.js.
+// API `backend.entities.<Nombre>.*` usada por ViviMemory.js y useChat.js.
 //
 // OBJETIVO: que migrar un mÃ³dulo sea cambiar UNA lÃ­nea de import, no reescribir
 // la lÃ³gica de negocio. Cada mÃ©todo de aquÃ­ replica el mÃ©todo equivalente de
-// Base44 verificado por grep en el repo real:
+// Contrato de entidades compatible con los módulos existentes:
 //   .list(sort, limit)              â ej: Memory.list('-importance', 200)
 //   .filter(query, sort, limit)     â ej: ChatMessage.filter({conversation_id}, 'created_date', 200)
 //   .create(data)                   â aÃ±ade ownerId automÃ¡ticamente (request.auth.uid)
@@ -15,7 +15,7 @@
 // ESTADO: escrito y sintÃ¡cticamente verificado (node --check), pero NO PROBADO
 // contra un proyecto Firebase real (este entorno no tiene credenciales ni red).
 // NO estÃ¡ importado por ningÃºn mÃ³dulo de producciÃ³n todavÃ­a â cero riesgo para
-// el flujo actual, que sigue funcionando 100% sobre Base44.
+// la aplicación utiliza Firebase como backend operativo.
 //
 // Antes de conectar esto de verdad:
 //   1. Desplegar firestore.rules a un proyecto real.
@@ -41,7 +41,7 @@ import { getAuth } from 'firebase/auth';
 import app from './firebase';
 
 /**
- * Convierte el string de orden estilo Base44 ('-importance', 'created_date')
+ * Convierte el string de orden de los módulos ('-importance', 'created_date')
  * en los parÃ¡metros de orderBy de Firestore.
  */
 function parseSort(sort) {
@@ -77,7 +77,7 @@ export function createFirestoreEntity(collectionName, opts = {}) {
   const colRef = collection(db, collectionName);
 
   return {
-    /** Lista documentos, ordenados como en Base44 ('-campo' = descendente). */
+    /** Lista documentos, ordenados ('-campo' = descendente). */
     async list(sort, limitCount) {
       const constraints = [];
       if (scopedToOwner) constraints.push(where('ownerId', '==', requireUid()));
@@ -88,7 +88,7 @@ export function createFirestoreEntity(collectionName, opts = {}) {
       return snap.docs.map(docToRecord);
     },
 
-    /** Filtra por campos exactos (equivalente a base44 .filter(queryObj, sort, limit)). */
+    /** Filtra por campos exactos. */
     async filter(filterObj = {}, sort, limitCount) {
       const constraints = [];
       if (scopedToOwner) constraints.push(where('ownerId', '==', requireUid()));
@@ -164,7 +164,7 @@ export function createFirestoreEntity(collectionName, opts = {}) {
   };
 }
 
-// ââ Entidades mapeadas 1:1 contra base44/entities/*.jsonc (ver informe de auditorÃ­a) ââ
+// ── Entidades expuestas por la fachada de backend ──
 export const FirestoreEntities = {
   User: createFirestoreEntity('users', { scopedToOwner: false }),
   Memory: createFirestoreEntity('memories'),

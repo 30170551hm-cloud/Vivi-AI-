@@ -18,8 +18,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
-    // ── Fix: Base44 is NOT configured — using Firebase Auth exclusively ──
-    // This function is intentionally simplified: Base44 migration is complete,
+    // ── Firebase Auth is the only production authentication provider ──
+    // This function is intentionally simplified:
     // and the public settings check is no longer needed.
     // All auth flows now go through Firebase.
     setIsLoadingPublicSettings(false);

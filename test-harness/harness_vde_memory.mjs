@@ -1,5 +1,5 @@
 // harness_vde_memory.mjs — Pruebas reales de:
-//  1. ViviMemory.buildContextBlock() — lógica pura, sin mocks (no toca Base44)
+//  1. ViviMemory.buildContextBlock() — lógica pura, sin mocks
 //  2. ViviVDE.analyzeRequest() end-to-end con una respuesta LLM simulada
 //     realista, verificando que la propuesta queda en estado 'diseñada'
 //     (el bug que corregimos antes) — NO 'desplegada'.
@@ -12,7 +12,7 @@ import { ModuleRegistry } from '../src/vivi/core/ModuleRegistry.js';
 import ViviMemory from '../src/vivi/modules/ViviMemory.js';
 import ViviVDE from '../src/vivi/modules/ViviVDE.js';
 import ViviCodeAnalyzer from '../src/vivi/modules/ViviCodeAnalyzer.js';
-import { base44 } from '../src/api/base44Client.js';
+import { backend } from '../src/lib/backendClient.js';
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -55,7 +55,7 @@ await test('ViviMemory.getActiveContextSummary: filtra solo proyectos/metas/tare
 });
 
 // ── 2. ViviVDE.analyzeRequest — end-to-end con LLM mockeado realista ──
-base44.integrations.Core.InvokeLLM = async () => ({
+backend.integrations.Core.InvokeLLM = async () => ({
   title: 'Corregir manejo nulo en X',
   description: 'Se detectó un acceso a propiedad de undefined',
   current_limitation: 'Crashea si el objeto es null',
@@ -68,7 +68,7 @@ base44.integrations.Core.InvokeLLM = async () => ({
   test_results: 'Simulado: pasaría',
 });
 let createdProposal = null;
-base44.entities.ImprovementProposal.create = async (data) => { createdProposal = data; return { id: 'fake-id', ...data }; };
+backend.entities.ImprovementProposal.create = async (data) => { createdProposal = data; return { id: 'fake-id', ...data }; };
 
 await test('ViviVDE.analyzeRequest: la propuesta generada queda en estado "diseñada" (NO "desplegada")', async () => {
   const bus = new EventBus();

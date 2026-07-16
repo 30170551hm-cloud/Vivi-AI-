@@ -3,7 +3,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend as base44 } from '@/lib/backendClient';
+import { backend } from '@/lib/backendClient';
 
 export const FACULTIES = {
   ciencias: {
@@ -96,7 +96,7 @@ export default class ViviUniversity extends ModuleBase {
     const route = this.routeQuestion(text);
     if (!route) return { faculty: null, entries: [] };
     try {
-      const entries = await base44.entities.KnowledgeEntry.filter({ faculty: route.faculty }, '-updated_date', 5);
+      const entries = await backend.entities.KnowledgeEntry.filter({ faculty: route.faculty }, '-updated_date', 5);
       return { ...route, entries: entries || [] };
     } catch {
       return { ...route, entries: [] };
@@ -117,7 +117,7 @@ export default class ViviUniversity extends ModuleBase {
     if (!faculty || !area || !title || !content) return null;
     const validFaculty = FACULTIES[faculty] ? faculty : 'humanidades';
     try {
-      const entry = await base44.entities.KnowledgeEntry.create({
+      const entry = await backend.entities.KnowledgeEntry.create({
         faculty: validFaculty, area, title, content,
         source: source || '', source_type: sourceType || 'web_search',
         verified: verified || false,
@@ -134,7 +134,7 @@ export default class ViviUniversity extends ModuleBase {
 
   async fetchFreshInfo(query, { store = false, faculty = null, area = null } = {}) {
     const result = await this.safe(async () => {
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await backend.integrations.Core.InvokeLLM({
         prompt: `Busca información actualizada y verificable sobre: ${query}\n\nPrioriza fuentes oficiales, artículos científicos, estándares internacionales y publicaciones académicas.\nSi hay opiniones diferentes, distingue entre hechos comprobados, hipótesis y opiniones.\nProporciona una respuesta clara, concisa y factual.`,
         response_json_schema: {
           type: 'object',
@@ -163,7 +163,7 @@ export default class ViviUniversity extends ModuleBase {
     const gaps = [];
     for (const [key, faculty] of Object.entries(FACULTIES)) {
       try {
-        const entries = await base44.entities.KnowledgeEntry.filter({ faculty: key }, '-updated_date', 1);
+        const entries = await backend.entities.KnowledgeEntry.filter({ faculty: key }, '-updated_date', 1);
         const count = entries?.length || 0;
         if (count < 3) gaps.push({ faculty: key, facultyName: faculty.name, icon: faculty.icon, currentCount: count, areas: faculty.areas });
       } catch {
@@ -177,7 +177,7 @@ export default class ViviUniversity extends ModuleBase {
     const stats = {};
     for (const [key, faculty] of Object.entries(FACULTIES)) {
       try {
-        const entries = await base44.entities.KnowledgeEntry.filter({ faculty: key }, '-updated_date', 50);
+        const entries = await backend.entities.KnowledgeEntry.filter({ faculty: key }, '-updated_date', 50);
         const all = entries || [];
         stats[key] = { name: faculty.name, icon: faculty.icon, areas: faculty.areas, totalEntries: all.length, verifiedEntries: all.filter((e) => e.verified).length };
       } catch {

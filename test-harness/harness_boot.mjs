@@ -1,7 +1,7 @@
 import '../test-harness/localStorage_polyfill.mjs';
 // harness_boot.mjs — Intenta ejecutar getVivi() (el bootstrap real, sin
 // modificar) fuera de un navegador. Se espera que módulos que dependen de
-// Base44 (import.meta.env) o del DOM fallen — eso se documenta con
+// Firebase (import.meta.env) o del DOM fallen — eso se documenta con
 // exactitud, no se oculta. El objetivo de ESTA prueba es una sola cosa:
 // verificar si el ReferenceError original (ViviSecurity is not defined)
 // reaparece o no.

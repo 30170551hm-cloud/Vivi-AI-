@@ -1,7 +1,7 @@
 // requestInterceptor.js — Interceptor global de peticiones HTTP, para
 // diagnóstico forense en un navegador real. Registra CADA petición hecha
 // vía fetch() o XMLHttpRequest (que es lo que usan por debajo tanto
-// nuestro código como el SDK de Base44 y su plugin de Vite), con:
+// nuestro código y cualquier plugin de Vite), con:
 //   - método, URL, body, headers
 //   - stack trace completo (para saber qué archivo/función la disparó)
 //   - respuesta y código HTTP
@@ -9,7 +9,7 @@
 //
 // USO: se importa por sus efectos secundarios, UNA SOLA VEZ, al principio
 // de main.jsx — ANTES de montar React — para no perderse ninguna petición,
-// incluida cualquiera que dispare el propio plugin de Vite de Base44 antes
+// incluida cualquiera que dispare un plugin de Vite antes
 // de que la app React exista.
 //
 // Los resultados se imprimen en consola con el prefijo [REQUEST-LOG] y

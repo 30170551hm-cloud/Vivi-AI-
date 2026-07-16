@@ -37,7 +37,7 @@ async function ensureUserProfile(firebaseUser) {
   const ref = doc(db, 'users', firebaseUser.uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
-    // Perfil por defecto — mismos campos y valores default que base44/entities/User.jsonc
+    // Perfil por defecto para nuevos usuarios.
     const defaultProfile = {
       display_name: firebaseUser.displayName || '',
       preferred_language: 'auto',
@@ -58,7 +58,7 @@ async function ensureUserProfile(firebaseUser) {
 }
 
 export const firebaseAuthAdapter = {
-  /** Usuario actual + su perfil de Firestore combinados (como base44 auth.me()). */
+  /** Usuario actual + su perfil de Firestore combinados. */
   async me() {
     const current = auth.currentUser;
     if (!current) throw new Error('No hay sesión activa');
@@ -87,7 +87,7 @@ export const firebaseAuthAdapter = {
     return ensureUserProfile(cred.user);
   },
 
-  /** Alias con la firma {email, password} que usa Register.jsx (misma que Base44). */
+  /** Alias con la firma {email, password} que usa Register.jsx. */
   async register({ email, password }) {
     return this.registerWithEmailPassword(email, password);
   },
@@ -102,7 +102,7 @@ export const firebaseAuthAdapter = {
     return this.confirmPasswordReset(resetToken, newPassword);
   },
 
-  /** Redirige a /login (Firebase no tiene una página de login hospedada como Base44). */
+  /** Redirige a /login. */
   redirectToLogin(returnUrl) {
     window.location.href = `/login${returnUrl ? `?from=${encodeURIComponent(returnUrl)}` : ''}`;
   },
@@ -168,7 +168,7 @@ export const firebaseAuthAdapter = {
           // que el documento en la base de datos existe y sus propiedades están listas.
           const profile = await ensureUserProfile(firebaseUser);
           
-          // Entregamos el objeto unificado (Mismo formato que espera recibir de Base44 .me())
+          // Entregamos el objeto unificado que espera la aplicación.
           callback({
             uid: firebaseUser.uid,
             email: firebaseUser.email,

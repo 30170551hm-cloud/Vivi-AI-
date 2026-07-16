@@ -1,5 +1,5 @@
 // FileManagementTool — Upload, manage, and extract data from files.
-// Uses Base44's UploadFile and ExtractDataFromUploadedFile integrations.
+// Uses the backend UploadFile and ExtractDataFromUploadedFile integrations.
 
 import { ToolBase } from './ToolBase';
 import { backend } from '@/lib/backendClient';

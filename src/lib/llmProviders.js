@@ -42,7 +42,7 @@ export const CoreIntegrations = {
 
   /**
    * Reemplazo directo de backend.integrations.Core.GenerateSpeech.
-   * Nota: el parámetro `language_code` del contrato original de Base44 no se
+   * Nota: el parámetro `language_code` del contrato histórico no se
    * usa aquí (OpenAI TTS detecta el idioma del texto); se acepta igual para
    * no romper la firma de llamada existente en ViviVoice.js.
    * @param {{text: string, language_code?: string}} params

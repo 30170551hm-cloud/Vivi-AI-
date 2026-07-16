@@ -338,13 +338,13 @@ export default class ViviVoice extends ModuleBase {
       platform: 'unknown',
       browser: 'unknown',
       inIframe: false,
-      isBase44Preview: false,
+      isEmbeddedPreview: false,
       speechSynthesisExists: 'speechSynthesis' in window,
     };
     try {
       env.inIframe = window.self !== window.top;
-      env.isBase44Preview = window.location.hostname.includes('base44') || env.inIframe;
-    } catch { env.isBase44Preview = true; env.inIframe = true; }
+      env.isEmbeddedPreview = env.inIframe;
+    } catch { env.isEmbeddedPreview = true; env.inIframe = true; }
     if (/iPhone|iPad|iPod/i.test(ua)) { env.platform = 'ios'; env.browser = /CriOS/i.test(ua) ? 'chrome-ios' : 'safari'; }
     else if (/Android/i.test(ua)) { env.platform = 'android'; env.browser = /Chrome/i.test(ua) ? 'chrome' : 'webview'; }
     else if (/Mac/i.test(ua)) { env.platform = 'macos'; env.browser = /Safari/i.test(ua) && !/Chrome/i.test(ua) ? 'safari' : 'chrome'; }

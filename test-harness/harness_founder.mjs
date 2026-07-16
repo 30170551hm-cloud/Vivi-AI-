@@ -1,7 +1,7 @@
 // harness_founder.mjs — Pruebas reales de ViviSecurity + ViviFounderAuth,
 // AHORA a través de la cadena real: authClient → (authMode) → localAuthAdapter,
-// exactamente como corre en producción cuando no hay Base44/Firebase
-// configurado. Antes este archivo mockeaba base44.auth.me() directamente,
+// exactamente como corre en producción cuando no hay Firebase
+// configurado. Antes este archivo mockeaba el cliente de backend directamente,
 // pero ViviSecurity ya no llama a eso — llama a authClient.me(). Se
 // actualiza el arnés para reflejar el cambio real de arquitectura.
 import '../test-harness/localStorage_polyfill.mjs'; // Node no tiene localStorage — los navegadores sí.

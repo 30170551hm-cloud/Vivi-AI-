@@ -46,7 +46,7 @@ REGLAS:
 - Las herramientas extienden ToolBase y se registran en TOOR
 - Las páginas son componentes React con Tailwind CSS
 - Los iconos son de lucide-react
-- Las entidades son JSON schemas en base44/entities/
+- Las entidades son colecciones tipadas en Firestore.
 
 FORMATO DE INFORME:
 Para cada solicitud, produces un informe estructurado con:

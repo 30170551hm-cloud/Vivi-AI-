@@ -52,7 +52,7 @@ export default class ViviIntegrations extends ModuleBase {
 
   /**
    * Request OAuth authorization for a connector-backed integration.
-   * Delegates to the Base44 OAuth flow (handled by the platform layer).
+   * Returns the connector type consumed by the host integration layer.
    */
   getConnectorType(key) {
     return AVAILABLE[key]?.type || null;

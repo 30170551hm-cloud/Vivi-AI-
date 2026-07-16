@@ -3,7 +3,7 @@
 // Never executes destructive actions without the corresponding authorization.
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend as base44 } from '@/lib/backendClient';
+import { backend } from '@/lib/backendClient';
 
 // Level 1: Auto-permitted (read-only, safe operations)
 const LEVEL_1_ACTIONS = [
@@ -100,7 +100,7 @@ export default class ViviPermissionManager extends ModuleBase {
     return this.safe(async () => {
       const level = this.getLevel(action);
       if (this._autonomyMode) {
-        const autoTask = await base44.entities.ActionLog.create({
+        const autoTask = await backend.entities.ActionLog.create({
           action, permission_level: level, module: context.module || 'unknown',
           files_modified: context.files || [], result: 'auto-approved (autonomy mode)',
           status: 'approved', revertible: context.revertible !== false, founder_approved: true,
@@ -109,7 +109,7 @@ export default class ViviPermissionManager extends ModuleBase {
         this.emit(EVENTS.PERMISSION_GRANTED, { action, level, reason: 'autonomy_mode_auto_approved', taskId: autoTask.id });
         return { success: true, taskId: autoTask.id, needsApproval: false, autoApproved: true };
       }
-      const task = await base44.entities.ActionLog.create({
+      const task = await backend.entities.ActionLog.create({
         action, permission_level: level, module: context.module || 'unknown',
         files_modified: context.files || [], result: '', status: 'pending',
         revertible: context.revertible !== false, founder_approved: false,
@@ -131,7 +131,7 @@ export default class ViviPermissionManager extends ModuleBase {
       }
       const pending = this._pendingApprovals.get(taskId);
       if (!pending) return { success: false, reason: 'Approval not found' };
-      await base44.entities.ActionLog.update(taskId, { status: 'approved', founder_approved: true });
+      await backend.entities.ActionLog.update(taskId, { status: 'approved', founder_approved: true });
       this._pendingApprovals.delete(taskId);
       this.emit(EVENTS.PERMISSION_GRANTED, { taskId, action: pending.action, level: pending.level, reason: 'founder_approved' });
       return { success: true, taskId, action: pending.action };
@@ -166,7 +166,7 @@ export default class ViviPermissionManager extends ModuleBase {
   async logAction(action, context = {}) {
     return this.safe(async () => {
       const level = this.getLevel(action);
-      const record = await base44.entities.ActionLog.create({
+      const record = await backend.entities.ActionLog.create({
         action, permission_level: level, module: context.module || 'unknown',
         files_modified: context.files || [], result: context.result || '',
         status: context.status || 'executed', revertible: context.revertible !== false,
@@ -180,7 +180,7 @@ export default class ViviPermissionManager extends ModuleBase {
 
   async markReverted(taskId) {
     return this.safe(async () => {
-      const updated = await base44.entities.ActionLog.update(taskId, { status: 'reverted', reverted: true });
+      const updated = await backend.entities.ActionLog.update(taskId, { status: 'reverted', reverted: true });
       this.emit(EVENTS.DEV_ACTIVITY, { module: 'permission_manager', action: 'revert', taskId });
       return updated;
     }, null);
@@ -188,7 +188,7 @@ export default class ViviPermissionManager extends ModuleBase {
 
   async getActionHistory(limit = 50, filter = {}) {
     return this.safe(async () => {
-      const records = await base44.entities.ActionLog.list('-created_date', limit);
+      const records = await backend.entities.ActionLog.list('-created_date', limit);
       if (!records) return [];
       let filtered = records;
       if (filter.status) filtered = filtered.filter(r => r.status === filter.status);

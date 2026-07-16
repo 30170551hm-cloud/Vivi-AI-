@@ -14,11 +14,11 @@ import ViviSecurity from '../src/vivi/modules/ViviSecurity.js';
 import ViviEmotionEngine from '../src/vivi/modules/ViviEmotionEngine.js';
 import ViviConversationEngine from '../src/vivi/modules/ViviConversationEngine.js';
 import { EVENTS } from '../src/vivi/events.js';
-import { base44 } from '../src/api/base44Client.js';
+import { backend } from '../src/lib/backendClient.js';
 
 // Respuesta simulada con el contrato REAL que ViviCore.js espera
 // (objeto estructurado, no un string plano — confirmado leyendo el código real).
-base44.integrations.Core.InvokeLLM = async () => ({
+backend.integrations.Core.InvokeLLM = async () => ({
   reply: 'Hola, soy Vivi. Esta es una respuesta simulada para verificar el pipeline.',
   confidence: 'alta',
   source: 'conocimiento',
