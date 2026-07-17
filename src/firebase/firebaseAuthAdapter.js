@@ -1,13 +1,15 @@
 import { 
   getAuth, 
-  signInWithPopup, 
-  GoogleAuthProvider, 
+  onAuthStateChanged, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
   sendPasswordResetEmail, 
   confirmPasswordReset, 
-  signOut, 
-  onAuthStateChanged 
+  signOut,
+  setPersistence,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { doc, getDoc, setDoc, getFirestore, serverTimestamp } from 'firebase/firestore';
 import app from '../lib/firebase';
@@ -61,34 +63,24 @@ export const firebaseAuthAdapter = {
   },
 
   async loginViaEmailPassword(email, password) {
+    await setPersistence(auth, browserLocalPersistence);
     const cred = await signInWithEmailAndPassword(auth, email, password);
     return ensureUserProfile(cred.user);
   },
 
   async registerWithEmailPassword(email, password) {
+    await setPersistence(auth, browserLocalPersistence);
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     return ensureUserProfile(cred.user);
   },
 
-  async register({ email, password }) {
-    return this.registerWithEmailPassword(email, password);
-  },
-
-  async loginWithProvider(providerName) {
-    if (providerName !== 'google') {
-      throw new Error(`Proveedor no soportado: ${providerName}`);
+  async loginWithProvider(provider) {
+    if (provider !== 'google') {
+      throw new Error(`Proveedor no soportado: ${provider}`);
     }
-    const provider = new GoogleAuthProvider();
-    const cred = await signInWithPopup(auth, provider);
+    await setPersistence(auth, browserLocalPersistence);
+    const cred = await signInWithPopup(auth, new GoogleAuthProvider());
     return ensureUserProfile(cred.user);
-  },
-
-  async resetPasswordRequest(email) {
-    return this.sendPasswordReset(email);
-  },
-
-  async resetPassword({ resetToken, newPassword }) {
-    return this.confirmPasswordReset(resetToken, newPassword);
   },
 
   async sendPasswordReset(email) {
@@ -103,11 +95,7 @@ export const firebaseAuthAdapter = {
     await signOut(auth);
   },
 
-  redirectToLogin(returnUrl) {
-    window.location.href = `/login${returnUrl ? `?from=${encodeURIComponent(returnUrl)}` : ''}`;
-  },
-
   onAuthStateChanged(callback) {
     return onAuthStateChanged(auth, callback);
-  }
+  },
 };
