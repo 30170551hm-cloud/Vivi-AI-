@@ -1,26 +1,19 @@
+// Firestore Security Rules — borrador para la migración desde Base44.
+// NO DESPLEGADO TODAVÍA. Revisar y probar en el emulador de Firebase antes
+// de aplicar a un proyecto real (firebase emulators:start --only firestore).
+//
+// Principio: cada documento pertenece a un usuario (ownerId == request.auth.uid),
+// replicando el aislamiento row-level que hoy provee Base44 automáticamente.
+// El founder (is_founder == true en users/{uid}) obtiene lectura ampliada
+// donde el diseño actual de Vivi lo requiere (Founder Panel, VDE Console).
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
     function isSignedIn() {
       return request.auth != null;
-    }
-
-    function userDocPath(uid) {
-      return /databases/$(database)/documents/users/$(uid);
-    }
-
-    function actorDoc() {
-      return get(userDocPath(request.auth.uid));
-    }
-
-    function isFounderOrAdmin() {
-      return isSignedIn()
-        && exists(userDocPath(request.auth.uid))
-        && (
-          actorDoc().data.is_founder == true
-          || actorDoc().data.role == 'admin'
-        );
     }
 
     function isOwner(resource) {
@@ -31,81 +24,55 @@ service cloud.firestore {
       return isSignedIn() && request.resource.data.ownerId == request.auth.uid;
     }
 
+    function isFounder() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_founder == true;
+    }
+
+    // ── users/{uid} — perfil y preferencias (equivalente a base44 User entity) ──
     match /users/{userId} {
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow read: if isSignedIn() && (request.auth.uid == userId || isFounderOrAdmin());
-      allow update, delete: if isSignedIn() && (request.auth.uid == userId || isFounderOrAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == userId || isFounder());
+      allow write: if isSignedIn() && request.auth.uid == userId;
     }
 
-    match /memories/{id} {
-      allow read, update, delete: if isOwner(resource) || isFounderOrAdmin();
+    // ── memories/{id} — equivalente a base44 Memory entity ──
+    match /memories/{memoryId} {
+      allow read, update, delete: if isOwner(resource);
       allow create: if isOwnerOnCreate();
     }
 
-    match /conversations/{id} {
-      allow read, update, delete: if isOwner(resource) || isFounderOrAdmin();
+    // ── conversations/{id} — equivalente a base44 Conversation entity ──
+    match /conversations/{conversationId} {
+      allow read, update, delete: if isOwner(resource);
       allow create: if isOwnerOnCreate();
     }
 
-    match /chat_messages/{id} {
-      allow read, update, delete: if isOwner(resource) || isFounderOrAdmin();
+    // ── chat_messages/{id} — equivalente a base44 ChatMessage entity ──
+    match /chat_messages/{messageId} {
+      allow read, update, delete: if isOwner(resource);
       allow create: if isOwnerOnCreate();
     }
 
-    match /tool_actions/{id} {
-      allow read: if isOwner(resource) || isFounderOrAdmin();
-      allow create: if isOwnerOnCreate() || isFounderOrAdmin();
-      allow update, delete: if isFounderOrAdmin();
+    // ── tool_actions/{id} — equivalente a base44 ToolAction entity ──
+    match /tool_actions/{actionId} {
+      allow read: if isOwner(resource) || isFounder();
+      allow create: if isOwnerOnCreate();
+      allow update, delete: if isFounder();
     }
 
-    match /improvement_proposals/{id} {
-      allow read, write: if isFounderOrAdmin();
+    // ── improvement_proposals/{id} — equivalente a base44 ImprovementProposal ──
+    // Solo el founder gestiona el ciclo de auto-mejora (VDE).
+    match /improvement_proposals/{proposalId} {
+      allow read, write: if isFounder();
     }
 
-    match /certification_tests/{id} {
-      allow read, write: if isFounderOrAdmin();
+    // ── certification_tests/{id} — equivalente a base44 CertificationTest ──
+    match /certification_tests/{testId} {
+      allow read, write: if isFounder();
     }
 
-    match /repo_change_audits/{id} {
-      allow create: if isFounderOrAdmin() && request.resource.data.actor_uid == request.auth.uid;
-      allow read: if isFounderOrAdmin() || (isSignedIn() && resource.data.actor_uid == request.auth.uid);
-      allow update, delete: if isFounderOrAdmin();
-    }
-
-    match /workspace_artifacts/{id} {
-      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow read, update, delete: if isOwner(resource) || isFounderOrAdmin();
-    }
-
-    match /action_logs/{id} {
-      allow read, write: if isFounderOrAdmin();
-    }
-
-    match /knowledge_entries/{id} {
-      allow read: if isSignedIn();
-      allow create, update, delete: if isFounderOrAdmin();
-    }
-
-    match /dev_tasks/{id} {
-      allow read, write: if isFounderOrAdmin();
-    }
-
-    match /project_memories/{id} {
-      allow read, write: if isFounderOrAdmin();
-    }
-
-    match /financial_transactions/{id} {
-      allow read, write: if isFounderOrAdmin();
-    }
-
-    match /integration_requests/{id} {
-      allow read, write: if isFounderOrAdmin();
-    }
-
-    match /integration_connections/{id} {
-      allow read, write: if isFounderOrAdmin();
-    }
-
+    // Por defecto: negar todo lo no listado explícitamente.
     match /{document=**} {
       allow read, write: if false;
     }

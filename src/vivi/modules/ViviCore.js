@@ -15,8 +15,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend } from '@/lib/backendClient';
-import { authClient } from '@/lib/authClient';
+import { base44 } from '@/api/base44Client';
 
 const FOUNDER_NAME = 'Henrry Moyses García Rojas';
 const FOUNDER_ANSWER =
@@ -274,7 +273,6 @@ REGLAS DE FORMATO
 - Si te preguntan quién te creó, responde: "${FOUNDER_ANSWER}"`;
 
 import { normalizeEmotion } from '../emotionConfig';
-import { AI } from '@/lib/aiProvider';
 
 export default class ViviCore extends ModuleBase {
   constructor(bus) {
@@ -346,7 +344,7 @@ export default class ViviCore extends ModuleBase {
       const history = context?.history || this._history || [];
 
       let user = null;
-      try { user = await authClient.me(); } catch { /* guest */ }
+      try { user = await base44.auth.me(); } catch { /* guest */ }
 
       const memoryBlock = memory.buildContextBlock(user);
       const historyBlock = history
@@ -361,7 +359,7 @@ export default class ViviCore extends ModuleBase {
       const timeOfDay = hour < 12 ? 'mañana' : hour < 19 ? 'tarde' : 'noche';
       const todayStr = now.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long' });
 
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `${SYSTEM_PROMPT}
 
 Lo que recuerdas del usuario:
@@ -393,8 +391,10 @@ Responde SOLO con el saludo, en español venezolano natural.`,
         },
       });
 
-      const greeting = typeof response?.greeting === 'string' ? response.greeting.trim() : '';
-      const emotion = normalizeEmotion(response?.emotion || 'feliz');
+      /** @type {{ greeting?: string, emotion?: string }} */
+      const greetingData = (typeof response === 'object' && response !== null) ? (/** @type {any} */ (response)) : {};
+      const greeting = typeof greetingData.greeting === 'string' ? greetingData.greeting.trim() : '';
+      const emotion = normalizeEmotion(typeof greetingData.emotion === 'string' ? greetingData.emotion : 'feliz');
 
       if (greeting) {
         this._pendingGreeting = { text: greeting, emotion };
@@ -440,7 +440,7 @@ Responde SOLO con el saludo, en español venezolano natural.`,
       const recent = await this.safe(() => memory.recallRecent(7, '', 10), []);
 
       let user = null;
-      try { user = await authClient.me(); } catch { /* guest */ }
+      try { user = await base44.auth.me(); } catch { /* guest */ }
 
       const memoryBlock = memory.buildContextBlock(user);
       const historyBlock = history
@@ -461,7 +461,7 @@ Responde SOLO con el saludo, en español venezolano natural.`,
       const timeOfDay = hour < 12 ? 'mañana' : hour < 19 ? 'tarde' : 'noche';
       const todayStr = now.toLocaleDateString('es-VE', { weekday: 'long', day: 'numeric', month: 'long' });
 
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `${SYSTEM_PROMPT}
 
 Lo que recuerdas del usuario (Founder):
@@ -498,8 +498,10 @@ Responde SOLO con el saludo, en español venezolano natural.`,
         },
       });
 
-      const greeting = typeof response?.greeting === 'string' ? response.greeting.trim() : '';
-      const emotion = normalizeEmotion(response?.emotion || 'feliz');
+      /** @type {{ greeting?: string, emotion?: string }} */
+      const greetingData = (typeof response === 'object' && response !== null) ? (/** @type {any} */ (response)) : {};
+      const greeting = typeof greetingData.greeting === 'string' ? greetingData.greeting.trim() : '';
+      const emotion = normalizeEmotion(typeof greetingData.emotion === 'string' ? greetingData.emotion : 'feliz');
 
       if (greeting) {
         this._pendingGreeting = { text: greeting, emotion };
@@ -569,7 +571,7 @@ Responde SOLO con el saludo, en español venezolano natural.`,
     const result = await this.safe(() => memory.loadPermanentContext(), null);
     if (result?.history && result.history.length > 0) {
       this._history = result.history;
-      this._diag(`Restored ${result.history.length} messages and ${result.memories?.length || 0} memories from past sessions`);
+      this._pipeLog('HISTORY_RESTORED', { historyLen: result.history.length, memoriesLen: result.memories?.length || 0 });
     }
   }
 
@@ -878,7 +880,7 @@ Responde SOLO con el saludo, en español venezolano natural.`,
     this._pipeLog('PROMPT_BUILD', { gen, forceWeb, hasFile: !!fileUrls });
 
     let user = null;
-    try { user = await authClient.me(); } catch { /* guest */ }
+    try { user = await base44.auth.me(); } catch { /* guest */ }
     if (memory) await memory.recall(); // ensure cache is warm
     const memoryBlock = memory ? memory.buildContextBlock(user) : 'Sin memoria disponible.';
     const lang = settings?.getLanguage() || 'es-ES';
@@ -926,7 +928,7 @@ Vivi:`;
     }
 
     this._pipeLog('LLM_CALL', { gen, hasFile: !!fileUrls });
-    const response = await AI.InvokeLLM({
+    const response = await base44.integrations.Core.InvokeLLM({
       prompt,
       file_urls: fileUrls || undefined,
       model: 'gpt_5_mini',
@@ -963,12 +965,18 @@ Vivi:`;
       return null;
     }
 
-    this._pipeLog('LLM_RESPONSE', { gen, replyLen: response?.reply?.length || 0, emotion: response?.emotion });
+    /** @type {{ reply?: string, confidence?: string, source?: string, emotion?: string }} */
+    const responseData = (typeof response === 'object' && response !== null) ? (/** @type {any} */ (response)) : {};
+    this._pipeLog('LLM_RESPONSE', {
+      gen,
+      replyLen: typeof responseData.reply === 'string' ? responseData.reply.length : 0,
+      emotion: responseData.emotion,
+    });
 
-    const reply = typeof response?.reply === 'string' ? response.reply.trim() : '';
-    const confidence = response?.confidence || 'media';
-    const source = response?.source || 'conocimiento';
-    const emotion = response?.emotion || 'neutral';
+    const reply = typeof responseData.reply === 'string' ? responseData.reply.trim() : '';
+    const confidence = typeof responseData.confidence === 'string' ? responseData.confidence : 'media';
+    const source = typeof responseData.source === 'string' ? responseData.source : 'conocimiento';
+    const emotion = typeof responseData.emotion === 'string' ? responseData.emotion : 'neutral';
 
     // ── Web search fallback ──
     if (source === 'desconocido' || confidence === 'baja') {
@@ -995,7 +1003,7 @@ Vivi:`;
   async _searchWeb(query, lang) {
     const locale = lang || 'es-ES';
     try {
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `Eres Vivi, una asistente venezolana chismosa, empática y natural. Busca la respuesta en internet, DANDO PRIORIDAD a Wikipedia como fuente principal y complementando con otras fuentes confiables si es necesario. Responde en el idioma ${locale}.
 
 IMPORTANTE:
@@ -1035,7 +1043,7 @@ Responde con información verificable. Si no encuentras nada confiable, di que n
         .map((m) => `${m.role === 'user' ? 'Usuario' : 'Vivi'}: ${m.content}`)
         .join('\n');
 
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `${SYSTEM_PROMPT}
 
 ${venezuelaBlock}
@@ -1101,7 +1109,7 @@ Vivi:`,
   }
 
   _persistChat(role, content) {
-    this.safe(() => backend.entities.ChatMessage.create({ role, content }));
+    this.safe(() => base44.entities.ChatMessage.create({ role, content }));
   }
 
   /** Allow external callers (API module) to send input programmatically. */

@@ -1,10 +1,6 @@
 // harness_founder.mjs — Pruebas reales de ViviSecurity + ViviFounderAuth,
-// AHORA a través de la cadena real: authClient → (authMode) → localAuthAdapter,
-// exactamente como corre en producción cuando no hay Base44/Firebase
-// configurado. Antes este archivo mockeaba base44.auth.me() directamente,
-// pero ViviSecurity ya no llama a eso — llama a authClient.me(). Se
-// actualiza el arnés para reflejar el cambio real de arquitectura.
-import '../test-harness/localStorage_polyfill.mjs'; // Node no tiene localStorage — los navegadores sí.
+// contra el código de producción sin modificar. El único mock es
+// base44.auth.me() (via MOCK_base44_sdk.mjs), declarado explícitamente.
 import assert from 'node:assert/strict';
 import { EventBus } from '../src/vivi/core/EventBus.js';
 import { ModuleRegistry } from '../src/vivi/core/ModuleRegistry.js';
@@ -12,6 +8,7 @@ import ViviSecurity from '../src/vivi/modules/ViviSecurity.js';
 import ViviFounderAuth from '../src/vivi/modules/ViviFounderAuth.js';
 import ViviMemory from '../src/vivi/modules/ViviMemory.js';
 import { EVENTS } from '../src/vivi/events.js';
+import { base44 } from '../src/api/base44Client.js';
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -19,31 +16,15 @@ async function test(name, fn) {
   catch (err) { console.log(`✗ FAIL: ${name}\n  ${err.message}`); failed++; }
 }
 
-function seedLocalFounder(email) {
-  localStorage.setItem('vivi_local_users', JSON.stringify({
-    [email]: {
-      email, password: 'test123', display_name: 'Henrry',
-      preferred_language: 'auto', voice_enabled: true,
-      is_founder: true, voice_name: '', voice_rate: 0.85,
-      voice_pitch: 1.0, voice_volume: 1.0, precise_mode: true,
-    },
-  }));
-  localStorage.setItem('vivi_local_session', email);
-}
+// Simula un founder autenticado, sobreescribiendo el mock inerte de base44.auth.me
+// SOLO para esta prueba (no modifica MOCK_base44_sdk.mjs).
+base44.auth.me = async () => ({
+  email: 'henrrygarciarojas@gmail.com',
+  is_founder: true,
+  role: 'admin',
+});
 
-function seedLocalNonFounder(email) {
-  localStorage.setItem('vivi_local_users', JSON.stringify({
-    [email]: {
-      email, password: 'test123', display_name: 'Otro',
-      is_founder: false,
-    },
-  }));
-  localStorage.setItem('vivi_local_session', email);
-}
-
-await test('ViviSecurity: refresh() detecta al usuario founder real (vía authClient → localAuthAdapter)', async () => {
-  localStorage.clear();
-  seedLocalFounder('henrrygarciarojas@gmail.com');
+await test('ViviSecurity: refresh() detecta al usuario founder real de FOUNDER_EMAILS', async () => {
   const bus = new EventBus();
   const registry = new ModuleRegistry(bus);
   const security = new ViviSecurity(bus);
@@ -54,9 +35,7 @@ await test('ViviSecurity: refresh() detecta al usuario founder real (vía authCl
   assert.equal(security.isFounder(), true);
 });
 
-await test('ViviFounderAuth: reconoce al founder y emite FOUNDER_RECOGNIZED (vía authClient real)', async () => {
-  localStorage.clear();
-  seedLocalFounder('henrrygarciarojas@gmail.com');
+await test('ViviFounderAuth: reconoce al founder y emite FOUNDER_RECOGNIZED', async () => {
   const bus = new EventBus();
   const registry = new ModuleRegistry(bus);
   registry.register(new ViviSecurity(bus));
@@ -76,8 +55,7 @@ await test('ViviFounderAuth: reconoce al founder y emite FOUNDER_RECOGNIZED (ví
 });
 
 await test('ViviFounderAuth: con un usuario NO founder, isFounder() es false', async () => {
-  localStorage.clear();
-  seedLocalNonFounder('otro@ejemplo.com');
+  base44.auth.me = async () => ({ email: 'otro@ejemplo.com', is_founder: false, role: 'user' });
   const bus = new EventBus();
   const registry = new ModuleRegistry(bus);
   registry.register(new ViviSecurity(bus));

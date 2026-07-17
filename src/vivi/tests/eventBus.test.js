@@ -4,7 +4,9 @@
 import { EventBus } from '../core/EventBus';
 
 export function runEventBusTests() {
+  /** @type {Array<{name: string, passed: boolean}>} */
   const results = [];
+  /** @param {string} name @param {boolean} cond */
   const assert = (name, cond) => {
     results.push({ name, passed: !!cond });
     if (!cond) throw new Error(`Assertion failed: ${name}`);
@@ -12,10 +14,11 @@ export function runEventBusTests() {
 
   // 1. Subscribe and receive
   const bus1 = new EventBus();
-  let received = null;
-  bus1.on('test:event', (p) => { received = p; });
+  /** @type {{hello?: string}} */
+  const received = {};
+  bus1.on('test:event', (p) => { received.hello = /** @type {{hello?: string}} */ (p).hello; });
   bus1.emit('test:event', { hello: 'world' });
-  assert('receives payload', received?.hello === 'world');
+  assert('receives payload', received.hello === 'world');
 
   // 2. Unsubscribe
   const bus2 = new EventBus();

@@ -1,4 +1,3 @@
-import '../test-harness/localStorage_polyfill.mjs';
 // harness_boot.mjs — Intenta ejecutar getVivi() (el bootstrap real, sin
 // modificar) fuera de un navegador. Se espera que módulos que dependen de
 // Base44 (import.meta.env) o del DOM fallen — eso se documenta con

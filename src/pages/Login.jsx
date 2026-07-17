@@ -1,145 +1,103 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { authClient } from "@/lib/authClient";
-import { AUTH_MODE } from "@/lib/authMode";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
-import AuthLayout from "@/components/AuthLayout";
-import GoogleIcon from "@/components/GoogleIcon";
-import PageTransition from "@/components/PageTransition";
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { firebaseAuthAdapter } from '@/firebase/firebaseAuthAdapter';
 
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const handleSubmit = async (e) => {
+  const from = location.state?.from?.pathname || '/';
+
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setError("");
     setLoading(true);
+    setError(null);
     try {
-      await authClient.loginViaEmailPassword(email, password);
-      window.location.href = "/";
+      await firebaseAuthAdapter.loginViaEmailPassword(email, password);
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || "Invalid email or password");
+      console.error('[Login] Error:', err);
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogle = async () => {
-    setError("");
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      await authClient.loginWithProvider("google", "/");
-      window.location.href = "/";
+      await firebaseAuthAdapter.loginWithProvider('google');
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || "No se pudo iniciar sesión con Google");
+      console.error('[Login Google] Error:', err);
+      setError(err.message || 'Error al autenticar con Google');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <PageTransition>
-    <AuthLayout
-      icon={LogIn}
-      title="Welcome back"
-      subtitle="Log in to your account"
-      footer={
-        <>
-          Don't have an account?{" "}
-          <Link to="/register" className="text-primary font-medium hover:underline">
-            Create one
-          </Link>
-        </>
-      }
-    >
-      {AUTH_MODE !== 'local' && (
-        <>
-          <Button
-            variant="outline"
-            className="w-full h-12 text-sm font-medium mb-6"
-            onClick={handleGoogle}
-          >
-            <GoogleIcon className="w-5 h-5 mr-2" />
-            Continue with Google
-          </Button>
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-4">
+      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+        <h2 className="text-3xl font-extrabold text-center mb-6 bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+          Vivi AI
+        </h2>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-3 text-muted-foreground">or</span>
-            </div>
+        {error && (
+          <div className="mb-4 p-3 bg-red-950/50 border border-red-800 text-red-200 text-sm rounded-lg">
+            {error}
           </div>
-        </>
-      )}
+        )}
 
-      {AUTH_MODE === 'local' && (
-        <div className="mb-4 p-3 rounded-lg bg-amber-500/10 text-amber-600 text-xs">
-          Modo local temporal: Firebase no está completo. El login con Google no está disponible; usa email y contraseña.
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-          {error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="you@example.com"
+        <form onSubmit={handleEmailLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Correo electrónico</label>
+            <input 
+              type="email" 
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
-              required
+              className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              placeholder="tu@correo.com"
             />
           </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link to="/forgot-password" className="text-xs text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-1">Contraseña</label>
+            <input 
+              type="password" 
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
+              className="w-full px-4 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              placeholder="••••••••"
             />
           </div>
+
+          <button 
+            type="submit" 
+            disabled={loading}
+            className="w-full py-3 bg-purple-600 hover:bg-purple-700 font-semibold rounded-lg transition duration-200 disabled:opacity-50"
+          >
+            {loading ? 'Iniciando sesión...' : 'Entrar'}
+          </button>
+        </form>
+
+        <div className="mt-6">
+          <button 
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-lg transition duration-200 flex items-center justify-center gap-2"
+          >
+            <span>Continuar con Google</span>
+          </button>
         </div>
-        <Button type="submit" className="w-full h-12 font-medium" disabled={loading}>
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Logging in...
-            </>
-          ) : (
-            "Log in"
-          )}
-        </Button>
-      </form>
-    </AuthLayout>
-    </PageTransition>
+      </div>
+    </div>
   );
 }

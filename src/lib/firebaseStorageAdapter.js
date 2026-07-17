@@ -1,9 +1,9 @@
-// firebaseStorageAdapter.js — Reemplazo de backend.integrations.Core.UploadFile.
+// firebaseStorageAdapter.js — Reemplazo de base44.integrations.Core.UploadFile.
 // Subida directa a Firebase Storage desde el cliente (no necesita Cloud
 // Function). Verificado contra los 4 call sites reales del repo
 // (TextComposer.jsx x2, useChat.js, FileManagementTool.js):
 //
-//   const result = await backend.integrations.Core.UploadFile({ file });
+//   const result = await base44.integrations.Core.UploadFile({ file });
 //   // result.file_url usado después
 //
 // ESTADO: escrito y verificado sintácticamente. NO conectado a ningún módulo
@@ -19,7 +19,7 @@ import app from './firebase';
 const storage = getStorage(app);
 
 /**
- * Reemplazo directo de backend.integrations.Core.UploadFile.
+ * Reemplazo directo de base44.integrations.Core.UploadFile.
  * @param {{file: File}} params
  * @returns {Promise<{file_url: string}>}
  */

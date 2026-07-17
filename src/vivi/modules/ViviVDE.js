@@ -25,8 +25,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend } from '@/lib/backendClient';
-import { AI } from '@/lib/aiProvider';
+import { base44 } from '@/api/base44Client';
 
 const VDE_SYSTEM_PROMPT = `Eres el Vivi Development Engine (VDE), el ingeniero de software interno de Vivi AI.
 Tu trabajo es analizar solicitudes de desarrollo, diseñar arquitectura, generar código, escribir pruebas y producir informes técnicos.
@@ -61,10 +60,12 @@ Para cada solicitud, produces un informe estructurado con:
 9. Resultado de pruebas (simuladas)`;
 
 export default class ViviVDE extends ModuleBase {
+  /** @param {import('../core/EventBus').EventBus} bus */
   constructor(bus) {
     super('vde', bus);
   }
 
+  /** @param {import('../core/ModuleRegistry').ModuleRegistry} registry */
   async init(registry) {
     await super.init(registry);
     this._diag('VDE initialized — ready to engineer');
@@ -79,8 +80,12 @@ export default class ViviVDE extends ModuleBase {
    * @param {object} options - { category, priority }
    * @returns {Promise<object>} The created ImprovementProposal
    */
+  /**
+   * @param {string} request
+   * @param {{category?: string, priority?: string}} [options]
+   */
   async analyzeRequest(request, options = {}) {
-    this._diag('Analyzing request', { request: request.slice(0, 80) });
+    this._diag(`Analyzing request: ${request.slice(0, 80)}`);
 
     const category = options.category || 'otro';
     const priority = options.priority || 'media';
@@ -91,15 +96,18 @@ export default class ViviVDE extends ModuleBase {
     // ── Step 1: Analyze + Design + Generate everything in one LLM call ──
     this._emitActivity(sessionId, 'generating', 'Diseñando arquitectura y generando código', { files: [] });
     const report = await this._generateReport(request, category);
+    const reportData = (typeof report === 'object' && report !== null)
+      ? /** @type {{title?: string, description?: string, current_limitation?: string, proposed_solution?: string, files?: Array<{path?: string, action?: 'create'|'modify', description?: string}>, benefits?: string, risks?: string, test_results?: string, generated_code?: string, generated_docs?: string}} */ (/** @type {any} */ (report))
+      : undefined;
 
-    if (!report) {
+    if (!reportData) {
       this._diagError('Failed to generate report', 'LLM returned no data');
       this._emitActivity(sessionId, 'error', 'No se pudo generar el informe', { error: 'LLM returned no data' });
       return null;
     }
 
     // Report which files will be created/modified
-    const files = report.files || [];
+    const files = reportData.files || [];
     for (const file of files) {
       this._emitActivity(sessionId, file.action === 'modify' ? 'correcting' : 'creating',
         file.action === 'modify' ? `Corrigiendo ${file.path}` : `Creando ${file.path}`,
@@ -108,26 +116,26 @@ export default class ViviVDE extends ModuleBase {
 
     // ── Step 2: Create the ImprovementProposal with the full report ──
     const proposal = await this.safe(() =>
-      backend.entities.ImprovementProposal.create({
-        title: report.title || request.slice(0, 80),
-        description: report.description || request,
+      base44.entities.ImprovementProposal.create({
+        title: reportData.title || request.slice(0, 80),
+        description: reportData.description || request,
         category,
-        current_limitation: report.current_limitation || '',
-        proposed_solution: report.proposed_solution || '',
+        current_limitation: reportData.current_limitation || '',
+        proposed_solution: reportData.proposed_solution || '',
         status: 'diseñada', // Awaiting founder review — VDE never self-deploys (see module header)
         priority,
-        files_affected: JSON.stringify(report.files || [], null, 2),
-        benefits: report.benefits || '',
-        risks: report.risks || '',
-        test_results: report.test_results || '',
-        generated_code: report.generated_code || '',
-        generated_docs: report.generated_docs || '',
+        files_affected: JSON.stringify(reportData.files || [], null, 2),
+        benefits: reportData.benefits || '',
+        risks: reportData.risks || '',
+        test_results: reportData.test_results || '',
+        generated_code: reportData.generated_code || '',
+        generated_docs: reportData.generated_docs || '',
         source: 'vde',
       })
     , null);
 
     if (proposal) {
-      this._diag('Proposal created', { id: proposal.id, title: proposal.title });
+      this._diag(`Proposal created: ${proposal.id} - ${proposal.title}`);
       this._emitActivity(sessionId, 'deployed', `Desplegado: ${proposal.title}`, { proposalId: proposal.id, title: proposal.title });
       this.emit(EVENTS.LOG_ADDED, {
         module: 'vde',
@@ -143,9 +151,10 @@ export default class ViviVDE extends ModuleBase {
    * Generate the full technical report using the LLM.
    * Returns: title, description, architecture, files, code, tests, docs, benefits, risks.
    */
+  /** @param {string} request @param {string} category */
   async _generateReport(request, category) {
     try {
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `${VDE_SYSTEM_PROMPT}
 
 Solicitud del Founder: "${request}"
@@ -198,7 +207,8 @@ Sé específico y completo. Genera código real, funcional, listo para implement
 
       return response;
     } catch (err) {
-      this._diagError('Report generation failed', err?.message);
+      const errorMessage = err instanceof Error ? err.message : String(err || 'Unknown error');
+      this._diagError('Report generation failed', errorMessage);
       return null;
     }
   }
@@ -206,6 +216,7 @@ Sé específico y completo. Genera código real, funcional, listo para implement
   /**
    * Optimize existing code. Analyzes the code and proposes improvements.
    */
+  /** @param {string} filePath @param {string} currentCode */
   async optimizeCode(filePath, currentCode) {
     return await this.analyzeRequest(
       `Optimizar el código del archivo ${filePath}. Código actual:\n\n${currentCode}`,
@@ -216,6 +227,7 @@ Sé específico y completo. Genera código real, funcional, listo para implement
   /**
    * Detect a bug and propose a fix.
    */
+  /** @param {string} errorDescription @param {string} codeContext */
   async detectBug(errorDescription, codeContext) {
     return await this.analyzeRequest(
       `Detectar y corregir el siguiente error:\n\nError: ${errorDescription}\n\nCódigo:\n${codeContext}`,
@@ -228,10 +240,10 @@ Sé específico y completo. Genera código real, funcional, listo para implement
    */
   async getPendingProposals() {
     const all = await this.safe(() =>
-      backend.entities.ImprovementProposal.filter({ source: 'vde' }, '-created_date', 50)
-    , []);
-    return (all || []).filter((p) =>
-      ['diseñada', 'implementada', 'probada'].includes(p.status)
+      base44.entities.ImprovementProposal.filter({ source: 'vde' }, '-created_date', 50)
+    , null);
+    return (all || []).filter((/** @type {{status?: string}} */ p) =>
+      ['diseñada', 'implementada', 'probada'].includes(p.status || '')
     );
   }
 
@@ -240,19 +252,22 @@ Sé específico y completo. Genera código real, funcional, listo para implement
    */
   async listAllProposals(limit = 100) {
     return await this.safe(() =>
-      backend.entities.ImprovementProposal.list('-created_date', limit)
-    , []);
+      base44.entities.ImprovementProposal.list('-created_date', limit)
+    , null);
   }
 
   /**
    * Vivi creates her own algorithm/code directly — no LLM generation,
    * she writes it herself. Stored as a proposal awaiting founder approval.
    */
+  /**
+   * @param {{title: string, description?: string, code?: string, category?: string, priority?: string, files?: unknown, docs?: string, benefits?: string, risks?: string}} payload
+   */
   async createAlgorithm({ title, description, code, category, priority, files, docs, benefits, risks }) {
-    this._diag('Creating algorithm', { title });
+    this._diag(`Creating algorithm: ${title}`);
 
     const proposal = await this.safe(() =>
-      backend.entities.ImprovementProposal.create({
+      base44.entities.ImprovementProposal.create({
         title,
         description: description || '',
         category: category || 'otro',
@@ -271,7 +286,7 @@ Sé específico y completo. Genera código real, funcional, listo para implement
     , null);
 
     if (proposal) {
-      this._diag('Algorithm created', { id: proposal.id });
+      this._diag(`Algorithm created: ${proposal.id}`);
       this.emit(EVENTS.LOG_ADDED, {
         module: 'vde',
         message: `Algoritmo creado por Vivi: ${title}`,
@@ -284,10 +299,11 @@ Sé específico y completo. Genera código real, funcional, listo para implement
   /**
    * Edit an existing proposal — Vivi can correct/improve her own code.
    */
+  /** @param {string} id @param {Record<string, unknown>} updates */
   async editProposal(id, updates) {
-    this._diag('Editing proposal', { id });
+    this._diag(`Editing proposal: ${id}`);
     const updated = await this.safe(() =>
-      backend.entities.ImprovementProposal.update(id, updates)
+      base44.entities.ImprovementProposal.update(id, updates)
     , null);
     if (updated) {
       this.emit(EVENTS.LOG_ADDED, {
@@ -302,9 +318,10 @@ Sé específico y completo. Genera código real, funcional, listo para implement
   /**
    * Delete a proposal — Vivi can remove her own code proposals.
    */
+  /** @param {string} id */
   async deleteProposal(id) {
-    this._diag('Deleting proposal', { id });
-    await this.safe(() => backend.entities.ImprovementProposal.delete(id));
+    this._diag(`Deleting proposal: ${id}`);
+    await this.safe(() => base44.entities.ImprovementProposal.delete(id));
     this.emit(EVENTS.LOG_ADDED, {
       module: 'vde',
       message: `Propuesta eliminada: ${id}`,
@@ -313,18 +330,21 @@ Sé específico y completo. Genera código real, funcional, listo para implement
     return true;
   }
 
+  /** @param {string} message */
   _diag(message) {
     console.log(`[ViviVDE] ${message}`);
     this.emit(EVENTS.LOG_ADDED, { module: 'vde', message, timestamp: Date.now() });
   }
 
+  /** @param {string} message @param {unknown} error */
   _diagError(message, error) {
-    const errMsg = error?.message || String(error || 'Unknown error');
+    const errMsg = error instanceof Error ? error.message : String(error || 'Unknown error');
     console.error(`[ViviVDE] ${message}`, error || '');
     this.emit(EVENTS.LOG_ADDED, { module: 'vde', message: `${message}: ${errMsg}`, level: 'error', timestamp: Date.now() });
   }
 
   /** Emit a real-time VDE activity event for the dashboard. */
+  /** @param {string} sessionId @param {string} status @param {string} message @param {Record<string, unknown>} [data] */
   _emitActivity(sessionId, status, message, data = {}) {
     this.emit(EVENTS.VDE_ACTIVITY, {
       sessionId,

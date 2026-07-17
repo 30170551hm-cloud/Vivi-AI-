@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ear, Brain, Volume2, Loader2 } from 'lucide-react';
+import { Ear, Loader2 } from 'lucide-react';
 import { EMOTION_AURA, EMOTION_EMOJI, normalizeEmotion } from '@/vivi/emotionConfig';
 import AvatarEyes from '@/components/vivi/AvatarEyes';
 
@@ -18,12 +18,6 @@ const AURA_COLORS = {
   doubt: 'rgba(245,158,11,0.42)',
 };
 
-const STATE_CONFIG = {
-  idle:       { label: '',             icon: null,     labelClass: '' },
-  listening:  { label: 'Escuchando',   icon: Ear,      labelClass: 'text-cyan-300 bg-cyan-500/15 border-cyan-400/30' },
-  thinking:   { label: 'Pensando',     icon: Brain,    labelClass: 'text-indigo-300 bg-indigo-500/15 border-indigo-400/30' },
-  speaking:   { label: 'Hablando',     icon: Volume2,  labelClass: 'text-fuchsia-300 bg-fuchsia-500/15 border-fuchsia-400/30' },
-};
 
 // Base head pose per state.
 const HEAD_BASE = {
@@ -52,12 +46,9 @@ const HEAD_LOOP_TRANSITION = {
 const THINKING_STEPS = ['Analizando', 'Razonando', 'Buscando', 'Generando'];
 
 export default function ViviAvatar({ state = 'idle', gesture = null, emotion = 'neutral', audioLevel = 0 }) {
-  const cfg = STATE_CONFIG[state] || STATE_CONFIG.idle;
   const emo = normalizeEmotion(emotion);
   const emotionActive = emo !== 'neutral';
   const activeAura = gesture === 'doubt' ? 'doubt' : state;
-  const StateIcon = cfg.icon;
-  const isActive = state !== 'idle';
 
   // ── Image loading state — ensures avatar NEVER disappears ──
   // If the image URL fails (network, CORS, expired), we show a gradient

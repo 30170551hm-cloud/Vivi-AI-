@@ -70,7 +70,7 @@ export default class ViviBaseBrain extends ModuleBase {
     // Build timeline (memories with dates, sorted)
     const timeline = memories
       .filter((m) => m.timeline_date)
-      .sort((a, b) => new Date(a.timeline_date) - new Date(b.timeline_date));
+      .sort((a, b) => new Date(a.timeline_date).getTime() - new Date(b.timeline_date).getTime());
 
     // Detect relationships: memories that share tags or reference the same key
     const relationships = [];

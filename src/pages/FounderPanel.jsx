@@ -11,14 +11,19 @@ import PageTransition from '@/components/PageTransition';
 
 // Reads data from ViviFounderConsole module via useVivi. Contains NO business logic.
 export default function FounderPanel() {
-  const { vivi, user } = useVivi();
+  const viviContext = useVivi();
   const navigate = useNavigate();
+  /** @type {any} */
+  const vivi = viviContext?.vivi ?? null;
+  /** @type {any} */
+  const registry = vivi ? vivi.registry : null;
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ users: 0, memories: 0, messages: 0 });
   const [authorized, setAuthorized] = useState(false);
 
   const { scrollRef, pullDistance, refreshing } = usePullToRefresh(async () => {
-    const founderConsole = vivi.registry.get('founder_console');
+    if (!registry) return;
+    const founderConsole = registry.get('founder_console');
     if (founderConsole && authorized) {
       const s = await founderConsole.getStats();
       if (s) setStats(s);
@@ -27,8 +32,9 @@ export default function FounderPanel() {
 
   useEffect(() => {
     (async () => {
-      const security = vivi.registry.get('security');
-      const founderConsole = vivi.registry.get('founder_console');
+      if (!registry) { setLoading(false); return; }
+      const security = registry.get('security');
+      const founderConsole = registry.get('founder_console');
       if (!security) { setLoading(false); return; }
 
       await security.refresh();
@@ -40,7 +46,7 @@ export default function FounderPanel() {
       }
       setLoading(false);
     })();
-  }, [vivi]);
+  }, [registry]);
 
   if (loading) {
     return (

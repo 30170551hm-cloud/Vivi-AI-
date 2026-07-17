@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileCode, CheckCircle, AlertTriangle, FlaskConical, FileText, Code2 } from 'lucide-react';
-import { backend } from '@/lib/backendClient';
 
+/**
+ * @param {{
+ *  icon: React.ComponentType<{ className?: string }>;
+ *  title: string;
+ *  children: React.ReactNode;
+ *  color?: string;
+ * }} props
+ */
 function Section({ icon: Icon, title, children, color = 'text-white/60' }) {
   const [open, setOpen] = useState(false);
   return (
@@ -32,14 +39,26 @@ function Section({ icon: Icon, title, children, color = 'text-white/60' }) {
   );
 }
 
-export default function VDEReport({ proposal, onUpdate }) {
+/**
+ * @param {{ proposal: {
+ *  files_affected?: string;
+ *  benefits?: string;
+ *  risks?: string;
+ *  test_results?: string;
+ *  generated_code?: string;
+ *  generated_docs?: string;
+ *  status?: string;
+ * }, onUpdate?: () => void }} props
+ */
+export default function VDEReport({ proposal }) {
+  /** @type {{ action?: string; path?: string; description?: string }[]} */
   let files = [];
-  try { files = JSON.parse(proposal.files_affected || '[]'); } catch { files = []; }
-
-  const advanceStatus = async (newStatus) => {
-    await backend.entities.ImprovementProposal.update(proposal.id, { status: newStatus });
-    onUpdate();
-  };
+  try {
+    const parsed = JSON.parse(proposal.files_affected || '[]');
+    files = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    files = [];
+  }
 
   return (
     <motion.div layout className="space-y-2.5 mt-2">
@@ -48,7 +67,7 @@ export default function VDEReport({ proposal, onUpdate }) {
         <Section icon={FileCode} title={`Archivos afectados (${files.length})`} color="text-cyan-300">
           <div className="space-y-1.5">
             {files.map((f, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs">
+              <div key={`${f.path || 'file'}-${i}`} className="flex items-start gap-2 text-xs">
                 <span className={`px-1.5 py-0.5 rounded font-mono ${f.action === 'create' ? 'bg-green-500/15 text-green-300' : 'bg-amber-500/15 text-amber-300'}`}>
                   {f.action === 'create' ? '+ nuevo' : '~ editar'}
                 </span>

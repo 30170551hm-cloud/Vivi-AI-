@@ -33,7 +33,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend } from '@/lib/backendClient';
+import { base44 } from '@/api/base44Client';
 import { EMOTION_VOICE, normalizeEmotion } from '../emotionConfig';
 
 const DEFAULT_VOICE_CONFIG = { name: '', rate: 0.85, pitch: 1.0, volume: 1.0 };
@@ -908,12 +908,25 @@ export default class ViviVoice extends ModuleBase {
   async _speakWithFallback(text, lang, gen) {
     this._diag('Cloud TTS fallback', { text: text.slice(0, 60), lang });
 
+    const payload = {
+      text: text.slice(0, 5000),
+      language_code: (lang || this._lang).slice(0, 2),
+    };
+
+    const generateSpeechFn = base44?.functions?.['core-generateSpeech'];
+
+    if (typeof generateSpeechFn !== 'function') {
+      this._diagError('GenerateSpeech function unavailable', {
+        name: 'MissingFunction',
+        message: 'base44.functions.core-generateSpeech is not available',
+      });
+      if (gen === this._speechGeneration) this._handleSpeechEnd('TTS fallback unavailable');
+      return;
+    }
+
     let result;
     try {
-      result = await backend.integrations.Core.GenerateSpeech({
-        text: text.slice(0, 5000),
-        language_code: (lang || this._lang).slice(0, 2),
-      });
+      result = await generateSpeechFn(payload);
     } catch (err) {
       this._diagError('GenerateSpeech exception', this._extractError(err));
       if (gen === this._speechGeneration) this._handleSpeechEnd('TTS fallback failed');

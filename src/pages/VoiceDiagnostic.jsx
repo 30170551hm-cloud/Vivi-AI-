@@ -109,7 +109,7 @@ export default function VoiceDiagnostic() {
               <Row label="Plataforma" value={info.env?.platform || 'unknown'} />
               <Row label="Navegador" value={info.env?.browser || 'unknown'} />
               <Row label="En iframe" value={info.env?.inIframe ? 'Sí' : 'No'} />
-              <Row label="Vista previa builder" value={info.env?.isBase44Preview ? 'Sí' : 'No'} />
+              <Row label="Vista previa Base44" value={info.env?.isBase44Preview ? 'Sí' : 'No'} />
             </dl>
           </div>
         </div>
@@ -279,6 +279,7 @@ export default function VoiceDiagnostic() {
   );
 }
 
+/** @param {{ label: string, value: React.ReactNode, ok?: boolean }} props */
 function Row({ label, value, ok }) {
   return (
     <div className="flex justify-between items-center">

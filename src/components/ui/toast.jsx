@@ -3,22 +3,26 @@ import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ToastProvider = React.forwardRef(({ ...props }, ref) => (
+/** @type {React.ForwardRefRenderFunction<any, Record<string, any>>} */
+const ToastProviderBase = ({ ...props }, ref) => (
   <div
     ref={ref}
     className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
     {...props}
   />
-));
+);
+const ToastProvider = React.forwardRef(ToastProviderBase);
 ToastProvider.displayName = "ToastProvider";
 
-const ToastViewport = React.forwardRef(({ ...props }, ref) => (
+/** @type {React.ForwardRefRenderFunction<any, Record<string, any>>} */
+const ToastViewportBase = ({ ...props }, ref) => (
   <div
     ref={ref}
     className="fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]"
     {...props}
   />
-));
+);
+const ToastViewport = React.forwardRef(ToastViewportBase);
 ToastViewport.displayName = "ToastViewport";
 
 const toastVariants = cva(
@@ -37,7 +41,8 @@ const toastVariants = cva(
   }
 );
 
-const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
+/** @type {React.ForwardRefRenderFunction<any, { className?: string, variant?: "default" | "destructive" } & Record<string, any>>} */
+const ToastBase = ({ className, variant, ...props }, ref) => {
   return (
     <div
       ref={ref}
@@ -45,10 +50,12 @@ const Toast = React.forwardRef(({ className, variant, ...props }, ref) => {
       {...props}
     />
   );
-});
+};
+const Toast = React.forwardRef(ToastBase);
 Toast.displayName = "Toast";
 
-const ToastAction = React.forwardRef(({ className, ...props }, ref) => (
+/** @type {React.ForwardRefRenderFunction<any, { className?: string } & Record<string, any>>} */
+const ToastActionBase = ({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -57,10 +64,12 @@ const ToastAction = React.forwardRef(({ className, ...props }, ref) => (
     )}
     {...props}
   />
-));
+);
+const ToastAction = React.forwardRef(ToastActionBase);
 ToastAction.displayName = "ToastAction";
 
-const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
+/** @type {React.ForwardRefRenderFunction<any, { className?: string } & Record<string, any>>} */
+const ToastCloseBase = ({ className, ...props }, ref) => (
   <button
     ref={ref}
     className={cn(
@@ -72,25 +81,30 @@ const ToastClose = React.forwardRef(({ className, ...props }, ref) => (
   >
     <X className="h-4 w-4" />
   </button>
-));
+);
+const ToastClose = React.forwardRef(ToastCloseBase);
 ToastClose.displayName = "ToastClose";
 
-const ToastTitle = React.forwardRef(({ className, ...props }, ref) => (
+/** @type {React.ForwardRefRenderFunction<any, { className?: string } & Record<string, any>>} */
+const ToastTitleBase = ({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn("text-sm font-semibold", className)}
     {...props}
   />
-));
+);
+const ToastTitle = React.forwardRef(ToastTitleBase);
 ToastTitle.displayName = "ToastTitle";
 
-const ToastDescription = React.forwardRef(({ className, ...props }, ref) => (
+/** @type {React.ForwardRefRenderFunction<any, { className?: string } & Record<string, any>>} */
+const ToastDescriptionBase = ({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn("text-sm opacity-90", className)}
     {...props}
   />
-));
+);
+const ToastDescription = React.forwardRef(ToastDescriptionBase);
 ToastDescription.displayName = "ToastDescription";
 
 export {

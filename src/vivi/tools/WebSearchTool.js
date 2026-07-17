@@ -2,7 +2,7 @@
 // Prioritizes Wikipedia and reliable sources. Verifies information before returning.
 
 import { ToolBase } from './ToolBase';
-import { AI } from '@/lib/aiProvider';
+import { base44 } from '@/api/base44Client';
 
 export default class WebSearchTool extends ToolBase {
   constructor() {
@@ -19,7 +19,7 @@ export default class WebSearchTool extends ToolBase {
     if (!query) return { success: false, data: null, error: 'Query requerida' };
 
     const lang = params?.lang || 'es-ES';
-    const response = await AI.InvokeLLM({
+    const response = await base44.integrations.Core.InvokeLLM({
       prompt: `Busca la respuesta en internet, DANDO PRIORIDAD a Wikipedia como fuente principal y complementando con otras fuentes confiables si es necesario. Responde en ${lang}.
 
 IMPORTANTE:

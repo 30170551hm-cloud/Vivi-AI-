@@ -5,23 +5,33 @@ import { useVivi } from '@/vivi/hooks/useVivi';
 // Voice system diagnostics for the Founder panel.
 // Shows TTS engine, environment, speechSynthesis availability, and errors.
 export default function VoiceStatus() {
-  const { vivi, voiceDiag } = useVivi();
+  const viviHook = useVivi();
+  const vivi = viviHook?.vivi;
+  const voiceDiag = viviHook?.voiceDiag;
+  /** @type {[any, (value: any) => void]} */
   const [status, setStatus] = useState(null);
+  /** @type {[any, (value: any) => void]} */
   const [lastError, setLastError] = useState(null);
 
   useEffect(() => {
-    const update = () => setStatus(vivi.voice?.getDiagnosticInfo());
+    /** @type {any} */
+    const viviAny = vivi;
+    if (!viviAny) return;
+    const update = () => setStatus(viviAny?.voice?.getDiagnosticInfo?.() || null);
     update();
     const interval = setInterval(update, 2000);
     return () => clearInterval(interval);
   }, [vivi]);
 
   useEffect(() => {
-    if (voiceDiag?.isError) setLastError(voiceDiag);
+    /** @type {any} */
+    const diag = voiceDiag;
+    if (diag?.isError) setLastError(diag);
   }, [voiceDiag]);
 
   if (!status) return null;
 
+  /** @param {{ label: string, value: React.ReactNode, ok?: boolean }} props */
   const Row = ({ label, value, ok }) => (
     <div className="flex items-center justify-between py-1.5 border-b border-white/5 last:border-0">
       <span className="text-white/50 text-sm">{label}</span>
@@ -58,7 +68,7 @@ export default function VoiceStatus() {
           <Row label="Plataforma" value={status.env.platform} />
           <Row label="Navegador" value={status.env.browser} />
           <Row label="Dentro de iframe" value={status.env.inIframe ? 'Sí' : 'No'} />
-          <Row label="Vista previa builder" value={status.env.isBase44Preview ? 'Sí' : 'No'} />
+          <Row label="Vista previa Base44" value={status.env.isBase44Preview ? 'Sí' : 'No'} />
         </div>
       </div>
 

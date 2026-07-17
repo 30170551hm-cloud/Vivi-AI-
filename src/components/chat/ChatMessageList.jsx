@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Copy, Sparkles, Check, MessageSquare } from 'lucide-react';
-import FileDelivery from '@/components/chat/FileDelivery';
+import { Copy, FileText, Sparkles, Check, MessageSquare } from 'lucide-react';
 
 // Renders the full message list with role-based styling, file attachments,
 // copy button, and a typing indicator while Vivi processes.
@@ -70,10 +69,14 @@ export default function ChatMessageList({ messages, sending }) {
                 <video controls src={msg.file_url} className="rounded-lg max-w-full mb-2" />
               )}
               {msg.message_type === 'document' && msg.file_url && (
-                <FileDelivery fileName={msg.file_name} fileUrl={msg.file_url} />
-              )}
-              {msg.message_type === 'generated_document' && msg.file_url && (
-                <FileDelivery fileName={msg.file_name} fileUrl={msg.file_url} generated />
+                <a
+                  href={msg.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-blue-300 hover:underline mb-2 text-sm"
+                >
+                  <FileText className="w-4 h-4 flex-shrink-0" /> {msg.file_name || 'Documento'}
+                </a>
               )}
 
               {msg.content && (

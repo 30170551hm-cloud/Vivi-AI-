@@ -15,7 +15,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend } from '@/lib/backendClient';
+import { base44 } from '@/api/base44Client';
 
 import WebSearchTool from '../tools/WebSearchTool';
 import MemoryTool from '../tools/MemoryTool';
@@ -25,16 +25,19 @@ import CodeTool from '../tools/CodeTool';
 import DocumentationTool from '../tools/DocumentationTool';
 import KnowledgeQueryTool from '../tools/KnowledgeQueryTool';
 import ProjectManagementTool from '../tools/ProjectManagementTool';
-import { AI } from '@/lib/aiProvider';
 
 export default class ViviTOOR extends ModuleBase {
+  /** @param {import('../core/EventBus').EventBus} bus */
   constructor(bus) {
     super('toor', bus);
+    /** @type {Map<string, any>} */
     this._tools = new Map();
+    /** @type {Array<{tool_name: string, action: string, input_summary: string, output_summary: string, status: string, duration_ms: number, error_message: string | null, timestamp: number}>} */
     this._actionLog = [];
     this._maxLogEntries = 100;
   }
 
+  /** @param {import('../core/ModuleRegistry').ModuleRegistry} registry */
   async init(registry) {
     await super.init(registry);
 
@@ -53,12 +56,14 @@ export default class ViviTOOR extends ModuleBase {
   }
 
   /** Register a new tool. */
+  /** @param {{name: string, description?: string, category?: string, requiresFounder?: boolean}} tool */
   registerTool(tool) {
     this._tools.set(tool.name, tool);
     this._diag(`Tool registered: ${tool.name}`);
   }
 
   /** Get a tool by name. */
+  /** @param {string} name */
   getTool(name) {
     return this._tools.get(name);
   }
@@ -78,12 +83,13 @@ export default class ViviTOOR extends ModuleBase {
    * Uses LLM to classify the request and select the best tool.
    * Returns the tool name and suggested parameters.
    */
+  /** @param {string} userText */
   async detectTool(userText) {
     const toolList = this.listTools();
     const toolDescriptions = toolList.map((t) => `- ${t.name}: ${t.description}`).join('\n');
 
     try {
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `Analiza la solicitud del usuario y determina qué herramienta de Vivi debe usarse.
 
 Herramientas disponibles:
@@ -110,9 +116,12 @@ Si la solicitud es una conversación normal, saludo, o pregunta que Vivi puede r
         },
       });
 
-      return response;
+      return (typeof response === 'object' && response !== null)
+        ? /** @type {{tool?: string, action?: string, params?: Record<string, unknown>, reason?: string}} */ (/** @type {any} */ (response))
+        : { tool: 'none', reason: 'invalid response' };
     } catch (err) {
-      this._diagError('detectTool failed', err?.message);
+      const errorMessage = err instanceof Error ? err.message : String(err || 'unknown error');
+      this._diagError('detectTool failed', errorMessage);
       return { tool: 'none', reason: 'detection failed' };
     }
   }
@@ -121,6 +130,7 @@ Si la solicitud es una conversación normal, saludo, o pregunta que Vivi puede r
    * Execute a tool by name with the given parameters.
    * Logs the action for audit, checks permissions.
    */
+  /** @param {string} toolName @param {Record<string, unknown>} params @param {{registry?: {get: (name: string) => any}}} context */
   async execute(toolName, params, context) {
     const tool = this._tools.get(toolName);
     if (!tool) {
@@ -145,9 +155,10 @@ Si la solicitud es una conversación normal, saludo, o pregunta que Vivi puede r
       return result;
     } catch (err) {
       const duration = Date.now() - startTime;
-      this._logAction(toolName, params, null, 'error', duration, err?.message);
-      this._diagError(`Tool error: ${toolName}`, err?.message);
-      return { success: false, data: null, error: err?.message || 'Error desconocido' };
+      const errorMessage = err instanceof Error ? err.message : String(err || 'Error desconocido');
+      this._logAction(toolName, params, null, 'error', duration, errorMessage);
+      this._diagError(`Tool error: ${toolName}`, errorMessage);
+      return { success: false, data: null, error: errorMessage };
     }
   }
 
@@ -156,28 +167,33 @@ Si la solicitud es una conversación normal, saludo, o pregunta que Vivi puede r
    * This is the main entry point that ViviCore calls.
    * Returns null if no tool is needed (normal conversation).
    */
+  /** @param {string} userText @param {{registry?: {get: (name: string) => any}}} context */
   async resolveRequest(userText, context) {
     const detection = await this.detectTool(userText);
+    const detectionData = (typeof detection === 'object' && detection !== null)
+      ? /** @type {{tool?: string, reason?: string, params?: Record<string, unknown>}} */ (/** @type {any} */ (detection))
+      : null;
 
-    if (!detection || detection.tool === 'none' || !detection.tool) {
+    if (!detectionData?.tool || detectionData.tool === 'none') {
       return null; // No tool needed — normal conversation
     }
 
-    this._diag(`TOOR detected tool: ${detection.tool} — ${detection.reason}`);
-    const result = await this.execute(detection.tool, detection.params || {}, context);
+    this._diag(`TOOR detected tool: ${detectionData.tool} — ${detectionData.reason || 'no reason'}`);
+    const result = await this.execute(detectionData.tool, detectionData.params || {}, context);
 
     return {
-      toolName: detection.tool,
-      reason: detection.reason,
+      toolName: detectionData.tool,
+      reason: detectionData.reason || 'No reason provided',
       result,
     };
   }
 
   /** Log an action to the in-memory audit trail and persist to ToolAction entity. */
+  /** @param {string} toolName @param {Record<string, unknown>} params @param {{data?: unknown} | null} result @param {string} status @param {number} durationMs @param {string | null | undefined} error */
   _logAction(toolName, params, result, status, durationMs, error) {
     const entry = {
       tool_name: toolName,
-      action: params?.action || 'execute',
+      action: typeof params?.action === 'string' ? params.action : 'execute',
       input_summary: JSON.stringify(params || {}).slice(0, 500),
       output_summary: result?.data ? JSON.stringify(result.data).slice(0, 500) : '',
       status,
@@ -192,7 +208,7 @@ Si la solicitud es una conversación normal, saludo, o pregunta que Vivi puede r
     }
 
     // Persist to entity for permanent audit trail (fire-and-forget)
-    this.safe(() => backend.entities.ToolAction.create({
+    this.safe(() => base44.entities.ToolAction.create({
       tool_name: entry.tool_name,
       action: entry.action,
       input_summary: entry.input_summary,
@@ -210,16 +226,18 @@ Si la solicitud es una conversación normal, saludo, o pregunta que Vivi puede r
 
   /** Get recent persisted actions from the database. */
   async getPersistedActions(limit = 50) {
-    return await this.safe(() => backend.entities.ToolAction.list('-created_date', limit), []);
+    return await this.safe(() => base44.entities.ToolAction.list('-created_date', limit), null);
   }
 
+  /** @param {string} message */
   _diag(message) {
     console.log(`[ViviTOOR] ${message}`);
     this.emit(EVENTS.LOG_ADDED, { module: 'toor', message, timestamp: Date.now() });
   }
 
+  /** @param {string} message @param {unknown} error */
   _diagError(message, error) {
-    const errMsg = error?.message || String(error || 'Unknown error');
+    const errMsg = error instanceof Error ? error.message : String(error || 'Unknown error');
     console.error(`[ViviTOOR] ${message}`, error || '');
     this.emit(EVENTS.LOG_ADDED, { module: 'toor', message: `${message}: ${errMsg}`, level: 'error', timestamp: Date.now() });
   }

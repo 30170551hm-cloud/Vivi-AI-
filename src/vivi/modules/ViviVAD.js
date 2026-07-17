@@ -36,6 +36,7 @@ const BARGE_IN_CONFIRM_MS = 120;
 const POLL_INTERVAL_MS = 30;
 
 export default class ViviVAD extends ModuleBase {
+  /** @param {import('../core/EventBus').EventBus} bus */
   constructor(bus) {
     super('vad', bus);
     this._audioContext = null;
@@ -47,6 +48,7 @@ export default class ViviVAD extends ModuleBase {
     this._aboveThresholdSince = 0;
   }
 
+  /** @param {import('../core/ModuleRegistry').ModuleRegistry} registry */
   async init(registry) {
     await super.init(registry);
   }
@@ -69,7 +71,7 @@ export default class ViviVAD extends ModuleBase {
         },
       });
 
-      const AC = window.AudioContext || window.webkitAudioContext;
+      const AC = window.AudioContext;
       if (!AC) return;
       this._audioContext = new AC();
       if (this._audioContext.state === 'suspended') {
@@ -89,7 +91,7 @@ export default class ViviVAD extends ModuleBase {
     } catch (err) {
       // Permission denied or hardware unavailable — barge-in simply won't work.
       // The manual mic button still functions as fallback.
-      this._diag('Barge-in detection unavailable', err?.message || 'unknown error');
+      this._diag(`Barge-in detection unavailable: ${err instanceof Error ? err.message : String(err || 'unknown error')}`);
     }
   }
 
@@ -109,7 +111,7 @@ export default class ViviVAD extends ModuleBase {
         this._aboveThresholdSince = now;
       } else if (now - this._aboveThresholdSince >= BARGE_IN_CONFIRM_MS) {
         // Confirmed: user is speaking — trigger barge-in.
-        this._diag('Barge-in detected', { rms: rms.toFixed(4) });
+        this._diag(`Barge-in detected: rms=${rms.toFixed(4)}`);
         this.emit(EVENTS.VAD_BARGE_IN, { rms });
         this.stopBargeInDetection();
         return;
@@ -122,6 +124,7 @@ export default class ViviVAD extends ModuleBase {
   }
 
   /** Calculate RMS (root mean square) of audio samples — a measure of loudness. */
+  /** @param {Uint8Array} buffer */
   _calculateRMS(buffer) {
     let sum = 0;
     for (let i = 0; i < buffer.length; i++) {
@@ -161,6 +164,11 @@ export default class ViviVAD extends ModuleBase {
       try { this._audioContext.close(); } catch { /* noop */ }
       this._audioContext = null;
     }
+  }
+
+  /** @param {string} message */
+  _diag(message) {
+    this.emit(EVENTS.LOG_ADDED, { module: 'vad', message, timestamp: Date.now() });
   }
 
   isActive() {

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { authClient } from "@/lib/authClient";
-import { AUTH_MODE } from "@/lib/authMode";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +29,8 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      await authClient.register({ email, password });
-      window.location.href = "/";
+      await base44.auth.register({ email, password });
+      setShowOtp(true);
     } catch (err) {
       setError(err.message || "Registration failed");
     } finally {
@@ -43,9 +42,9 @@ export default function Register() {
     setError("");
     setLoading(true);
     try {
-      const result = await authClient.verifyOtp({ email, otpCode });
+      const result = await base44.auth.verifyOtp({ email, otpCode });
       if (result?.access_token) {
-        await authClient.setToken(result.access_token);
+        base44.auth.setToken(result.access_token);
       }
       window.location.href = "/";
     } catch (err) {
@@ -58,7 +57,7 @@ export default function Register() {
   const handleResend = async () => {
     setError("");
     try {
-      await authClient.resendOtp(email);
+      await base44.auth.resendOtp(email);
       toast({
         title: "Code sent",
         description: "Check your email for the new code.",
@@ -68,14 +67,8 @@ export default function Register() {
     }
   };
 
-  const handleGoogle = async () => {
-    setError("");
-    try {
-      await authClient.loginWithProvider("google", "/");
-      window.location.href = "/";
-    } catch (err) {
-      setError(err.message || "No se pudo continuar con Google");
-    }
+  const handleGoogle = () => {
+    base44.auth.loginWithProvider("google", "/");
   };
 
   if (showOtp) {
@@ -149,33 +142,23 @@ export default function Register() {
         </>
       }
     >
-      {AUTH_MODE !== 'local' && (
-        <>
-          <Button
-            variant="outline"
-            className="w-full h-12 text-sm font-medium mb-6"
-            onClick={handleGoogle}
-          >
-            <GoogleIcon className="w-5 h-5 mr-2" />
-            Continue with Google
-          </Button>
+      <Button
+        variant="outline"
+        className="w-full h-12 text-sm font-medium mb-6"
+        onClick={handleGoogle}
+      >
+        <GoogleIcon className="w-5 h-5 mr-2" />
+        Continue with Google
+      </Button>
 
-          <div className="relative mb-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-3 text-muted-foreground">or</span>
-            </div>
-          </div>
-        </>
-      )}
-
-      {AUTH_MODE === 'local' && (
-        <div className="mb-4 p-3 rounded-lg bg-amber-500/10 text-amber-600 text-xs">
-          Modo local temporal: Firebase no está completo. El registro con Google no está disponible; usa email y contraseña.
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
         </div>
-      )}
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-card px-3 text-muted-foreground">or</span>
+        </div>
+      </div>
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">

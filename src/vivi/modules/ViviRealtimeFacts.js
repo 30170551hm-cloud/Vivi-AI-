@@ -4,7 +4,7 @@
 // must respond with the standard "no access" fallback — never a guess.
 
 import { ModuleBase } from '../core/ModuleBase';
-import { AI } from '@/lib/aiProvider';
+import { base44 } from '@/api/base44Client';
 
 // Detection patterns — intentionally broad to catch natural phrasings.
 const TIME_PATTERNS =
@@ -23,6 +23,7 @@ const NO_ACCESS_MSG =
   'No puedo confirmar ese dato porque no tengo acceso en este momento.';
 
 export default class ViviRealtimeFacts extends ModuleBase {
+  /** @param {import('../core/EventBus').EventBus} bus */
   constructor(bus) {
     super('realtime_facts', bus);
   }
@@ -31,6 +32,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
    * Classify whether the user is asking for real-time data.
    * Returns the query type ('time' | 'date' | 'location' | 'weather') or null.
    */
+  /** @param {string} text */
   detectQuery(text) {
     if (!text) return null;
     if (TIME_PATTERNS.test(text)) return 'time';
@@ -41,6 +43,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
   }
 
   /** Get current time from the device clock. Always succeeds. */
+  /** @param {string} lang */
   getTime(lang) {
     const now = new Date();
     const locale = this._localeFor(lang);
@@ -52,6 +55,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
   }
 
   /** Get current date from the device clock. Always succeeds. */
+  /** @param {string} lang */
   getDate(lang) {
     const now = new Date();
     const locale = this._localeFor(lang);
@@ -69,6 +73,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
    * to a readable city/country using an LLM with internet context.
    * Returns null if geolocation is unavailable or the user denies permission.
    */
+  /** @param {string} lang */
   async getLocation(lang) {
     if (typeof navigator === 'undefined' || !navigator.geolocation) return null;
 
@@ -86,7 +91,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
     const locale = this._localeFor(lang);
 
     try {
-      const res = await AI.InvokeLLM({
+      const res = await base44.integrations.Core.InvokeLLM({
         prompt: `Reverse geocode these coordinates to the nearest city and country. Latitude: ${latitude}, Longitude: ${longitude}. Reply in locale ${locale}.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
@@ -99,8 +104,9 @@ export default class ViviRealtimeFacts extends ModuleBase {
           required: ['city', 'country'],
         },
       });
-      if (res?.city && res?.country) {
-        return `Te encuentras en ${res.city}, ${res.country}.`;
+      const geo = (typeof res === 'object' && res !== null) ? /** @type {{city?: string, country?: string}} */ (res) : {};
+      if (geo.city && geo.country) {
+        return `Te encuentras en ${geo.city}, ${geo.country}.`;
       }
       return `Te encuentras cerca de latitud ${latitude.toFixed(2)}, longitud ${longitude.toFixed(2)}.`;
     } catch {
@@ -113,11 +119,12 @@ export default class ViviRealtimeFacts extends ModuleBase {
    * Get current weather via LLM with internet context.
    * Requires a location string; returns null if the lookup fails.
    */
+  /** @param {string} location @param {string} lang */
   async getWeather(location, lang) {
     if (!location) return null;
     const locale = this._localeFor(lang);
     try {
-      const res = await AI.InvokeLLM({
+      const res = await base44.integrations.Core.InvokeLLM({
         prompt: `What is the current weather in ${location}? Provide the temperature in Celsius and a brief description of conditions. Reply in locale ${locale}.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
@@ -131,9 +138,11 @@ export default class ViviRealtimeFacts extends ModuleBase {
           required: ['temperature', 'conditions'],
         },
       });
-      if (res?.temperature && res?.conditions) {
-        const loc = res.location || location;
-        return `En ${loc}, la temperatura es de ${res.temperature} con ${res.conditions}.`;
+      /** @type {{temperature?: string, conditions?: string, location?: string}} */
+      const weather = (typeof res === 'object' && res !== null) ? (/** @type {any} */ (res)) : {};
+      if (weather.temperature && weather.conditions) {
+        const loc = weather.location || location;
+        return `En ${loc}, la temperatura es de ${weather.temperature} con ${weather.conditions}.`;
       }
       return null;
     } catch {
@@ -146,6 +155,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
    * Returns { text, available } — if available is false, text is the standard
    * "no access" message and the caller should NOT fall back to the LLM.
    */
+  /** @param {'time'|'date'|'location'|'weather'} type @param {string} lang */
   async resolveQuery(type, lang) {
     try {
       switch (type) {
@@ -185,7 +195,7 @@ export default class ViviRealtimeFacts extends ModuleBase {
     if (!position) return null;
     const { latitude, longitude } = position.coords;
     try {
-      const res = await AI.InvokeLLM({
+      const res = await base44.integrations.Core.InvokeLLM({
         prompt: `Reverse geocode to city and country: latitude ${latitude}, longitude ${longitude}.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
@@ -198,13 +208,15 @@ export default class ViviRealtimeFacts extends ModuleBase {
           required: ['city', 'country'],
         },
       });
-      if (res?.city) return `${res.city}, ${res.country || ''}`;
+      const geo = (typeof res === 'object' && res !== null) ? /** @type {{city?: string, country?: string}} */ (res) : {};
+      if (geo.city) return `${geo.city}, ${geo.country || ''}`;
       return `${latitude.toFixed(2)},${longitude.toFixed(2)}`;
     } catch {
       return `${latitude.toFixed(2)},${longitude.toFixed(2)}`;
     }
   }
 
+  /** @param {string} lang */
   _localeFor(lang) {
     if (!lang || lang === 'auto') return 'es-ES';
     return lang;

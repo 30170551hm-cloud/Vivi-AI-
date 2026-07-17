@@ -5,7 +5,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { AI } from '@/lib/aiProvider';
+import { base44 } from '@/api/base44Client';
 
 export default class ViviKnowledge extends ModuleBase {
   constructor(bus) {
@@ -26,7 +26,7 @@ export default class ViviKnowledge extends ModuleBase {
    */
   async search(query, requestId = null) {
     const result = await this.safe(async () => {
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `Busca información actualizada sobre: ${query}\n\nProporciona una respuesta clara, concisa y factual.`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',
@@ -41,7 +41,7 @@ export default class ViviKnowledge extends ModuleBase {
   /** Ask the LLM to extract structured data from the web. */
   async searchStructured(query, schema) {
     return this.safe(async () => {
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `Busca y extrae información sobre: ${query}`,
         add_context_from_internet: true,
         model: 'gemini_3_flash',

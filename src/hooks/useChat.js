@@ -3,10 +3,9 @@
 // AI image generation, and bridges to ViviCore for responses.
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { backend } from '@/lib/backendClient';
+import { base44 } from '@/api/base44Client';
 import { useVivi } from '@/vivi/hooks/useVivi';
 import { EVENTS } from '@/vivi';
-import { generateFile } from '@/lib/fileGenerator';
 
 function getFileMessageType(file) {
   const type = file.type || '';
@@ -34,7 +33,7 @@ export function useChat() {
   const loadConversations = useCallback(async () => {
     setLoading(true);
     try {
-      const list = await backend.entities.Conversation.list('-updated_date', 50);
+      const list = await base44.entities.Conversation.list('-updated_date', 50);
       setConversations(list || []);
     } catch (e) {
       console.error('Failed to load conversations', e);
@@ -48,7 +47,7 @@ export function useChat() {
   const loadMessages = useCallback(async (id) => {
     if (!id) { setMessages([]); return; }
     try {
-      const msgs = await backend.entities.ChatMessage.filter({ conversation_id: id }, 'created_date', 200);
+      const msgs = await base44.entities.ChatMessage.filter({ conversation_id: id }, 'created_date', 200);
       setMessages(msgs || []);
     } catch (e) {
       console.error('Failed to load messages', e);
@@ -65,7 +64,7 @@ export function useChat() {
       const convId = currentIdRef.current;
       if (convId && payload?.text) {
         try {
-          const msg = await backend.entities.ChatMessage.create({
+          const msg = await base44.entities.ChatMessage.create({
             role: 'vivi',
             content: payload.text,
             conversation_id: convId,
@@ -86,7 +85,7 @@ export function useChat() {
   // Create a new conversation
   const createConversation = useCallback(async (title = 'Nueva conversación') => {
     try {
-      const conv = await backend.entities.Conversation.create({ title });
+      const conv = await base44.entities.Conversation.create({ title });
       setConversations((prev) => [conv, ...prev]);
       setCurrentId(conv.id);
       setMessages([]);
@@ -103,8 +102,8 @@ export function useChat() {
 
   const deleteConversation = useCallback(async (id) => {
     try {
-      await backend.entities.ChatMessage.deleteMany({ conversation_id: id });
-      await backend.entities.Conversation.delete(id);
+      await base44.entities.ChatMessage.deleteMany({ conversation_id: id });
+      await base44.entities.Conversation.delete(id);
       setConversations((prev) => prev.filter((c) => c.id !== id));
       if (currentIdRef.current === id) {
         setCurrentId(null);
@@ -135,7 +134,7 @@ export function useChat() {
 
     if (file) {
       try {
-        const result = await backend.integrations.Core.UploadFile({ file });
+        const result = await base44.integrations.Core.UploadFile({ file });
         fileUrl = result.file_url;
         fileName = file.name;
         messageType = getFileMessageType(file);
@@ -146,7 +145,7 @@ export function useChat() {
 
     // Persist the user's message
     try {
-      const userMsg = await backend.entities.ChatMessage.create({
+      const userMsg = await base44.entities.ChatMessage.create({
         role: 'user',
         content: text || fileName || 'Archivo',
         conversation_id: convId,
@@ -194,7 +193,7 @@ export function useChat() {
 
     // Save the user's prompt as a message
     try {
-      const userMsg = await backend.entities.ChatMessage.create({
+      const userMsg = await base44.entities.ChatMessage.create({
         role: 'user',
         content: prompt,
         conversation_id: convId,
@@ -207,9 +206,9 @@ export function useChat() {
 
     setSending(true);
     try {
-      const result = await backend.integrations.Core.GenerateImage({ prompt });
+      const result = await base44.integrations.Core.GenerateImage({ prompt });
       if (result?.url) {
-        const viviMsg = await backend.entities.ChatMessage.create({
+        const viviMsg = await base44.entities.ChatMessage.create({
           role: 'vivi',
           content: `Imagen generada para: ${prompt}`,
           conversation_id: convId,
@@ -225,86 +224,11 @@ export function useChat() {
     setSending(false);
   }, [createConversation]);
 
-  // Generate and deliver a file (PDF, TXT, MD, Word, CSV) to the chat
-  const deliverFile = useCallback(async (content, fileType = 'txt', fileName = 'documento') => {
-    if (!content?.trim()) return;
-
-    let convId = currentIdRef.current;
-    if (!convId) {
-      const conv = await createConversation(`Documento: ${fileName}`);
-      if (!conv) return;
-      convId = conv.id;
-    }
-
-    // Save the user's request as a message
-    try {
-      const userMsg = await backend.entities.ChatMessage.create({
-        role: 'user',
-        content: `Genera un documento ${fileType.toUpperCase()}: ${fileName}`,
-        conversation_id: convId,
-        message_type: 'text',
-      });
-      setMessages((prev) => [...prev, userMsg]);
-    } catch (e) {
-      console.error(e);
-    }
-
-    setSending(true);
-    try {
-      const file = generateFile(content, fileType, fileName);
-      const result = await backend.integrations.Core.UploadFile({ file });
-      if (result?.file_url) {
-        const viviMsg = await backend.entities.ChatMessage.create({
-          role: 'vivi',
-          content: `Aquí está tu documento: ${file.name}`,
-          conversation_id: convId,
-          message_type: 'generated_document',
-          file_url: result.file_url,
-          file_name: file.name,
-        });
-        setMessages((prev) => [...prev, viviMsg]);
-        loadConversations();
-      }
-    } catch (e) {
-      console.error('File generation failed', e);
-    }
-    setSending(false);
-  }, [createConversation, loadConversations]);
-
-  // Listen for Vivi's automatic file delivery events
-  useEffect(() => {
-    if (!vivi) return;
-    const unsub = vivi.on(EVENTS.FILE_DELIVERED, async (payload) => {
-      if (!payload?.content) return;
-      const convId = currentIdRef.current;
-      if (!convId) return;
-      try {
-        const file = generateFile(payload.content, payload.fileType || 'txt', payload.fileName || 'documento');
-        const result = await backend.integrations.Core.UploadFile({ file });
-        if (result?.file_url) {
-          const viviMsg = await backend.entities.ChatMessage.create({
-            role: 'vivi',
-            content: payload.message || 'Aquí está tu documento.',
-            conversation_id: convId,
-            message_type: 'generated_document',
-            file_url: result.file_url,
-            file_name: file.name,
-          });
-          setMessages((prev) => [...prev, viviMsg]);
-          loadConversations();
-        }
-      } catch (e) {
-        console.error('Auto file delivery failed', e);
-      }
-    });
-    return () => { if (unsub) unsub(); };
-  }, [vivi, loadConversations]);
-
   // Export a conversation as a text file
   const exportConversation = useCallback(async (id) => {
     try {
       const conv = conversations.find((c) => c.id === id);
-      const msgs = await backend.entities.ChatMessage.filter({ conversation_id: id }, 'created_date', 500);
+      const msgs = await base44.entities.ChatMessage.filter({ conversation_id: id }, 'created_date', 500);
       const text = msgs.map((m) => `[${m.role === 'user' ? 'Usuario' : 'Vivi'}]\n${m.content}`).join('\n\n---\n\n');
       const blob = new Blob([text], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -335,7 +259,6 @@ export function useChat() {
     deleteConversation,
     sendMessage,
     generateImage,
-    deliverFile,
     exportConversation,
   };
 }

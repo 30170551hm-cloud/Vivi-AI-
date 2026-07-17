@@ -10,31 +10,34 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog';
 import { Trash2, AlertTriangle, Loader2 } from 'lucide-react';
-import { backend } from '@/lib/backendClient';
-import { authClient } from '@/lib/authClient';
+import { base44 } from '@/api/base44Client';
 
 // Account deletion flow required by Google Play Store policy.
 // Wipes user-owned data (memories, chat history) then signs out.
 export default function AccountDeletion() {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  /** @type {[string | null, React.Dispatch<React.SetStateAction<string | null>>]} */
   const [error, setError] = useState(null);
 
+  /**
+   * @param {React.MouseEvent<HTMLButtonElement>} e
+   */
   const handleDelete = async (e) => {
     e.preventDefault();
     setDeleting(true);
     setError(null);
     try {
-      const me = await authClient.me();
+      const me = await base44.auth.me();
       const userId = me?.id;
       if (userId) {
         await Promise.all([
-          backend.entities.Memory.deleteMany({ created_by_id: userId }),
-          backend.entities.ChatMessage.deleteMany({ created_by_id: userId }),
+          base44.entities.Memory.deleteMany({ created_by_id: userId }),
+          base44.entities.ChatMessage.deleteMany({ created_by_id: userId }),
         ]);
       }
-      await authClient.logout();
-    } catch (err) {
+      await base44.auth.logout();
+    } catch {
       setError('No se pudo completar la eliminación. Intenta de nuevo.');
       setDeleting(false);
     }

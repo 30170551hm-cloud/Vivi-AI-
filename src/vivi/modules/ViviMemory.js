@@ -11,9 +11,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend } from '@/lib/backendClient';
-import { authClient } from '@/lib/authClient';
-import { AI } from '@/lib/aiProvider';
+import { base44 } from '@/api/base44Client';
 
 const CATEGORY_LABELS = {
   name: 'Nombre',
@@ -73,7 +71,7 @@ export default class ViviMemory extends ModuleBase {
    * what they've discussed before.
    */
   async loadPermanentContext() {
-    const memories = await this.safe(() => backend.entities.Memory.list('-importance', 200), []);
+    const memories = await this.safe(() => base44.entities.Memory.list('-importance', 200), []);
     this._cache = memories || [];
     this._computeStats();
 
@@ -100,7 +98,7 @@ export default class ViviMemory extends ModuleBase {
   /** Retrieve all memories, most important first. Cached per session. */
   async recall() {
     if (this._cache) return this._cache;
-    const memories = await this.safe(() => backend.entities.Memory.list('-importance', 200), []);
+    const memories = await this.safe(() => base44.entities.Memory.list('-importance', 200), []);
     this._cache = memories || [];
     this._computeStats();
     this.emit(EVENTS.MEMORY_RECALLED, { count: this._cache.length });
@@ -145,7 +143,7 @@ export default class ViviMemory extends ModuleBase {
    * Restores the thread of past conversations across sessions.
    */
   async recallConversationHistory(limit = 20) {
-    const messages = await this.safe(() => backend.entities.ChatMessage.list('-created_date', limit), []);
+    const messages = await this.safe(() => base44.entities.ChatMessage.list('-created_date', limit), []);
     if (!messages || messages.length === 0) return [];
     return messages.reverse().map((m) => ({ role: m.role, content: m.content }));
   }
@@ -398,7 +396,7 @@ export default class ViviMemory extends ModuleBase {
   /** Store a new memory. */
   async store({ category, key, value, importance = 1, status, tags, timeline_date, is_milestone, milestone_type, conversation_ref }) {
     const record = await this.safe(() =>
-      backend.entities.Memory.create({
+      base44.entities.Memory.create({
         category, key, value,
         importance,
         status: status || 'active',
@@ -418,7 +416,7 @@ export default class ViviMemory extends ModuleBase {
 
   /** Update an existing memory. */
   async update(id, patch) {
-    const record = await this.safe(() => backend.entities.Memory.update(id, patch));
+    const record = await this.safe(() => base44.entities.Memory.update(id, patch));
     if (record) {
       this._cache = null;
       this._computeStats();
@@ -429,21 +427,21 @@ export default class ViviMemory extends ModuleBase {
 
   /** Delete a memory by id. */
   async forget(id) {
-    await this.safe(() => backend.entities.Memory.delete(id));
+    await this.safe(() => base44.entities.Memory.delete(id));
     this._cache = null;
     this._computeStats();
   }
 
   /** Delete all memories (full reset). */
   async forgetAll() {
-    await this.safe(() => backend.entities.Memory.deleteMany({}));
+    await this.safe(() => base44.entities.Memory.deleteMany({}));
     this._cache = [];
     this._computeStats();
   }
 
   /** List all memories for the admin panel. */
   async listAll() {
-    const memories = await this.safe(() => backend.entities.Memory.list('-created_date', 500), []);
+    const memories = await this.safe(() => base44.entities.Memory.list('-created_date', 500), []);
     return memories || [];
   }
 
@@ -488,7 +486,7 @@ export default class ViviMemory extends ModuleBase {
         timeline_date: m.timeline_date || undefined,
       }));
     if (records.length === 0) return { imported: 0 };
-    const created = await this.safe(() => backend.entities.Memory.bulkCreate(records), []);
+    const created = await this.safe(() => base44.entities.Memory.bulkCreate(records), []);
     this._cache = null;
     this._computeStats();
     return { imported: created?.length || 0 };
@@ -556,7 +554,7 @@ export default class ViviMemory extends ModuleBase {
     if (nameMatch) {
       const name = nameMatch[1];
       try {
-        await authClient.updateMe({ display_name: name });
+        await base44.auth.updateMe({ display_name: name });
         const settings = this.registry?.get('settings');
         if (settings) settings.refresh();
         this.emit(EVENTS.SETTINGS_UPDATED, { display_name: name });
@@ -566,7 +564,7 @@ export default class ViviMemory extends ModuleBase {
     // LLM-powered extraction
     try {
       const todayISO = new Date().toISOString().split('T')[0];
-      const response = await AI.InvokeLLM({
+      const response = await base44.integrations.Core.InvokeLLM({
         prompt: `Analiza esta conversación y extrae TODA la información personal digna de recordar sobre el usuario.
 
 Fecha de hoy: ${todayISO}
@@ -627,8 +625,11 @@ REGLAS:
         }
       });
 
-      if (response?.memories && Array.isArray(response.memories) && response.memories.length > 0) {
-        for (const mem of response.memories) {
+      /** @type {{ memories?: Array<{category?: string, key?: string, value?: string, importance?: number, status?: string, tags?: string[], timeline_date?: string, is_milestone?: boolean, milestone_type?: string}> }} */
+      const responseData = (typeof response === 'object' && response !== null) ? (/** @type {any} */ (response)) : {};
+      const extracted = Array.isArray(responseData.memories) ? responseData.memories : [];
+      if (extracted.length > 0) {
+        for (const mem of extracted) {
           if (mem.value && mem.category) {
             await this.store({
               category: mem.category,
@@ -640,10 +641,11 @@ REGLAS:
               timeline_date: mem.timeline_date || undefined,
               is_milestone: mem.is_milestone || false,
               milestone_type: mem.milestone_type || undefined,
+              conversation_ref: `${userText.slice(0, 120)}|${(viviReply || '').slice(0, 120)}`,
             });
           }
         }
-        this._diag(`Auto-learned ${response.memories.length} memories from conversation`);
+        this._diag(`Auto-learned ${extracted.length} memories from conversation`);
       }
     } catch (err) {
       this._diagError('Auto-extraction failed', err?.message);

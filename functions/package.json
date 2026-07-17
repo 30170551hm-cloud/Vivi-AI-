@@ -5,7 +5,7 @@
   "engines": {
     "node": "20"
   },
-  "main": "index.js",
+  "main": "",
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions",

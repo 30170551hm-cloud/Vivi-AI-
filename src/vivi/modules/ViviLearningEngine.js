@@ -6,7 +6,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { AI } from '@/lib/aiProvider';
+import { base44 } from '@/api/base44Client';
 
 export default class ViviLearningEngine extends ModuleBase {
   constructor(bus) {
@@ -26,7 +26,7 @@ export default class ViviLearningEngine extends ModuleBase {
 
     // Use the LLM to extract structured knowledge.
     const extracted = await this.safe(() =>
-      AI.InvokeLLM({
+      base44.integrations.Core.InvokeLLM({
         prompt: `Extrae conocimiento estructurado de este contenido.
 
 Tema: ${topic}

@@ -1,28 +1,46 @@
-// @ts-nocheck
+// src/api/base44Client.js — Versión limpia y neutralizada para producción con Firebase
 
-const appId = import.meta.env.VITE_BASE44_APP_ID;
-
-function createStub() {
-  return new Proxy(
-    {},
-    {
-      get(target, prop) {
-        return (...args) => {
-          console.warn(
-            `[Base44 desabilitado] Se intentó usar "${String(prop)}" pero Base44 está desactivado.`,
-            args
-          );
-          return Promise.resolve(null);
-        };
-      },
+export const base44 = {
+  auth: {
+    me: async () => { 
+      throw new Error('Base44 Auth deshabilitado. La aplicación utiliza Firebase Auth.'); 
+    },
+    logout: async () => {},
+    redirectToLogin: (returnUrl) => {
+      window.location.href = `/login${returnUrl ? `?from=${encodeURIComponent(returnUrl)}` : ''}`;
     }
-  );
-}
+  },
+  entities: {
+    User: {
+      list: async () => [],
+      get: async () => null,
+      create: async () => {},
+      update: async () => {},
+      delete: async () => {}
+    }
+  },
+  integrations: {
+    Core: {
+      InvokeLLM: async () => { throw new Error('Usa Cloud Functions / Gemini'); },
+      GenerateImage: async () => { throw new Error('No soportado'); }
+    }
+  },
+  analytics: {
+    track: () => {},
+    trackBatch: () => {}
+  }
+};
 
-if (!appId) {
-  console.warn(
-    "[Base44] No hay VITE_BASE44_APP_ID configurado. Vivi funcionará usando Firebase."
-  );
-}
+export const appParams = {
+  appId: 'vivi-ai',
+  token: null
+};
 
-export const base44 = createStub();
+export function createAxiosClient() {
+  return {
+    get: async () => ({ data: {} }),
+    post: async () => ({ data: {} }),
+    put: async () => ({ data: {} }),
+    delete: async () => ({ data: {} })
+  };
+}

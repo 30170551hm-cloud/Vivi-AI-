@@ -4,7 +4,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { authClient } from '@/lib/authClient';
+import { base44 } from '@/api/base44Client';
 
 export default class ViviSecurity extends ModuleBase {
   constructor(bus) {
@@ -22,7 +22,7 @@ export default class ViviSecurity extends ModuleBase {
 
   /** Refresh the current user from the auth backend. */
   async refresh() {
-    this._user = await this.safe(() => authClient.me(), null);
+    this._user = await this.safe(() => base44.auth.me(), null);
     return this._user;
   }
 

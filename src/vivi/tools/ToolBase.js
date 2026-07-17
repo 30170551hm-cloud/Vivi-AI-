@@ -3,6 +3,7 @@
 // To add a new tool: create a file extending ToolBase, register it in ViviTOOR.
 
 export class ToolBase {
+  /** @param {{name: string, description: string, category?: string, permissions?: string[], requiresFounder?: boolean}} config */
   constructor(config) {
     this.name = config.name;
     this.description = config.description;
@@ -13,8 +14,8 @@ export class ToolBase {
 
   /**
    * Execute the tool.
-   * @param {object} params - Tool-specific parameters
-   * @param {object} context - { registry, user, bus }
+   * @param {object} _params - Tool-specific parameters
+   * @param {object} _context - { registry, user, bus }
    * @returns {Promise<{ success: boolean, data: any, error?: string }>}
    */
   async execute(_params, _context) {

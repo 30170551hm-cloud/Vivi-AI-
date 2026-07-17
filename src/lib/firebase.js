@@ -13,7 +13,14 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || 'demo-app'
 };
 
-let app, auth, db, storage;
+/** @type {import('firebase/app').FirebaseApp | undefined} */
+let app;
+/** @type {import('firebase/auth').Auth | undefined} */
+let auth;
+/** @type {import('firebase/firestore').Firestore | undefined} */
+let db;
+/** @type {import('firebase/storage').FirebaseStorage | undefined} */
+let storage;
 let firebaseInitialized = false;
 
 try {

@@ -4,7 +4,7 @@
 
 import { ModuleBase } from '../core/ModuleBase';
 import { EVENTS } from '../events';
-import { backend } from '@/lib/backendClient';
+import { base44 } from '@/api/base44Client';
 
 export default class ViviFounderConsole extends ModuleBase {
   constructor(bus) {
@@ -24,9 +24,9 @@ export default class ViviFounderConsole extends ModuleBase {
     }
 
     const [users, memories, messages] = await Promise.all([
-      this.safe(() => backend.entities.User.list(), []),
-      this.safe(() => backend.entities.Memory.list(), []),
-      this.safe(() => backend.entities.ChatMessage.list(), []),
+      this.safe(() => base44.entities.User.list(), []),
+      this.safe(() => base44.entities.Memory.list(), []),
+      this.safe(() => base44.entities.ChatMessage.list(), []),
     ]);
 
     return {
@@ -40,14 +40,14 @@ export default class ViviFounderConsole extends ModuleBase {
   async listUsers() {
     const security = this.registry?.get('security');
     if (!security?.isAuthorized()) return [];
-    return this.safe(() => backend.entities.User.list(), []);
+    return this.safe(() => base44.entities.User.list(), []);
   }
 
   /** List all stored memories across all users. */
   async listMemories() {
     const security = this.registry?.get('security');
     if (!security?.isAuthorized()) return [];
-    return this.safe(() => backend.entities.Memory.list('-importance', 100), []);
+    return this.safe(() => base44.entities.Memory.list('-importance', 100), []);
   }
 
   health() {

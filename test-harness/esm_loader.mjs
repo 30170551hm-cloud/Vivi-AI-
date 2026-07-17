@@ -59,17 +59,7 @@ export async function load(url, context, nextLoad) {
   const sourceText = isBuffer ? Buffer.from(result.source).toString('utf-8') : result.source;
 
   if (typeof sourceText === 'string' && sourceText.includes('import.meta.env')) {
-    // Por defecto, import.meta.env se neutraliza a un objeto vacío (simula
-    // el caso real de "sin .env configurado"). Variables TEST_* permiten
-    // simular configuraciones específicas por escenario de prueba.
-    const envEntries = [];
-    if (process.env.TEST_BASE44_APPID) envEntries.push(`VITE_BASE44_APP_ID: ${JSON.stringify(process.env.TEST_BASE44_APPID)}`);
-    if (process.env.TEST_FIREBASE_APIKEY) envEntries.push(`VITE_FIREBASE_API_KEY: ${JSON.stringify(process.env.TEST_FIREBASE_APIKEY)}`);
-    if (process.env.TEST_FIREBASE_AUTHDOMAIN) envEntries.push(`VITE_FIREBASE_AUTH_DOMAIN: ${JSON.stringify(process.env.TEST_FIREBASE_AUTHDOMAIN)}`);
-        if (process.env.TEST_GEMINI_KEY) envEntries.push(`VITE_GEMINI_API_KEY: ${JSON.stringify(process.env.TEST_GEMINI_KEY)}`);
-    if (process.env.TEST_FIREBASE_PROJECTID) envEntries.push(`VITE_FIREBASE_PROJECT_ID: ${JSON.stringify(process.env.TEST_FIREBASE_PROJECTID)}`);
-    const fakeEnv = `({ ${envEntries.join(', ')} })`;
-    const patched = sourceText.replaceAll('import.meta.env', fakeEnv);
+    const patched = sourceText.replaceAll('import.meta.env', '({})');
     return { ...result, source: patched };
   }
   return result;

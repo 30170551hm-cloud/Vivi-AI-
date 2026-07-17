@@ -1,4 +1,4 @@
-// Vivi bootstrap â creates the singleton registry, registers all modules,
+// Vivi bootstrap — creates the singleton registry, registers all modules,
 // and initializes them. This is the single entry point for the entire system.
 // To add a module: import it, register it here, done. Other modules are unaffected.
 
@@ -32,9 +32,6 @@ import ViviAudioEngine from './modules/ViviAudioEngine';
 import ViviLearningEngine from './modules/ViviLearningEngine';
 import ViviConversationEngine from './modules/ViviConversationEngine';
 import ViviCodeAnalyzer from './modules/ViviCodeAnalyzer';
-import ViviPermissionManager from './modules/ViviPermissionManager';
-import ViviUniversity from './modules/ViviUniversity';
-import ViviAnalytics from './modules/ViviAnalytics';
 
 let _instance = null;
 
@@ -49,7 +46,7 @@ export function getVivi() {
   const registry = new ModuleRegistry(bus);
 
   // Register all modules. Order matters only for init sequence, not for
-  // runtime â they communicate via events, not constructor dependencies.
+  // runtime — they communicate via events, not constructor dependencies.
   registry.register(new ViviSettings(bus));
   registry.register(new ViviSecurity(bus));
   registry.register(new ViviMemory(bus));
@@ -77,9 +74,6 @@ export function getVivi() {
   registry.register(new ViviLearningEngine(bus));
   registry.register(new ViviConversationEngine(bus));
   registry.register(new ViviCodeAnalyzer(bus));
-  registry.register(new ViviPermissionManager(bus));
-  registry.register(new ViviUniversity(bus));
-  registry.register(new ViviAnalytics(bus));
 
   // Initialize all modules (fire-and-forget; modules handle their own readiness).
   registry.initAll().catch((err) => {
@@ -99,10 +93,7 @@ export function getVivi() {
     notifications: registry.get('notifications'),
     settings: registry.get('settings'),
     founderConsole: registry.get('founder_console'),
-security: registry.get('security'),
-    analytics: registry.get('analytics'),
-    permissionManager: registry.get('permission_manager'),
-    university: registry.get('university'),
+// analytics: registry.get('analytics'),    security: registry.get('security'),
     api: registry.get('api'),
     logger: registry.get('logger'),
     realtimeFacts: registry.get('realtime_facts'),
@@ -120,9 +111,6 @@ security: registry.get('security'),
     learningEngine: registry.get('learning_engine'),
     conversationEngine: registry.get('conversation_engine'),
     codeAnalyzer: registry.get('code_analyzer'),
-    permissionManager: registry.get('permission_manager'),
-    university: registry.get('university'),
-    analytics: registry.get('analytics'),
     // Event bus pass-through for the UI hook.
     on: bus.on.bind(bus),
     off: bus.off.bind(bus),

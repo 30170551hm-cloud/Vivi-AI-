@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Check, X, Clock, AlertTriangle, Zap, ChevronRight, FileCode } from 'lucide-react';
-import { backend } from '@/lib/backendClient';
+import { base44 } from '@/api/base44Client';
 import VDERequestForm from '@/components/vde/VDERequestForm';
 import VDEReport from '@/components/vde/VDEReport';
 
@@ -43,18 +43,10 @@ function ProposalCard({ proposal, onUpdate }) {
   const status = STATUS_CONFIG[proposal.status] || STATUS_CONFIG.detectada;
   const StatusIcon = status.icon;
 
-  const advanceStatus = async (newStatus) => {
-    try {
-      await backend.entities.ImprovementProposal.update(proposal.id, { status: newStatus, founder_notes: notes });
-      onUpdate();
-    } catch (err) {
-      console.error('Error updating proposal:', err);
-    }
-  };
 
   const saveNotes = async () => {
     try {
-      await backend.entities.ImprovementProposal.update(proposal.id, { founder_notes: notes });
+      await base44.entities.ImprovementProposal.update(proposal.id, { founder_notes: notes });
       onUpdate();
     } catch (err) {
       console.error('Error saving notes:', err);
@@ -153,7 +145,7 @@ function NewProposalForm({ onClose, onCreated }) {
     if (!form.title.trim()) return;
     setSaving(true);
     try {
-      await backend.entities.ImprovementProposal.create({ ...form, status: 'detectada' });
+      await base44.entities.ImprovementProposal.create({ ...form, status: 'detectada' });
       onCreated();
     } catch (err) {
       console.error('Error creating proposal:', err);
@@ -237,7 +229,7 @@ export default function SelfImprovement() {
 
   const load = async () => {
     try {
-      const data = await backend.entities.ImprovementProposal.list('-created_date', 100);
+      const data = await base44.entities.ImprovementProposal.list('-created_date', 100);
       setProposals(data || []);
     } catch (err) {
       console.error('Error loading proposals:', err);
@@ -269,7 +261,7 @@ export default function SelfImprovement() {
             Automejora
           </h1>
           <p className="text-white/50 text-sm sm:text-base mt-3">
-            Vivi propone mejoras y el backend las procesa con validaciones de seguridad, rama controlada y PR automática en GitHub.
+            Vivi tiene control total: crea, despliega y gestiona su código de forma autónoma. Modo automático activado.
           </p>
         </div>
 

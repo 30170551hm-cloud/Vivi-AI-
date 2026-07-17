@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Mic, MicOff, Keyboard, Settings2, LogOut, Power, Hand, PhoneCall } from 'lucide-react';
 import { useVivi } from '@/vivi/hooks/useVivi';
-import { authClient } from '@/lib/authClient';
+import { base44 } from '@/api/base44Client';
 import { EVENTS } from '@/vivi/events';
 import ViviAvatar from '@/components/vivi/ViviAvatar';
 import ViviStatusIndicator from '@/components/vivi/ViviStatusIndicator';
@@ -18,7 +18,7 @@ export default function Vivi() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [conversationStarted, setConversationStarted] = useState(false);
 
-  const handleLogout = () => authClient.logout('/');
+  const handleLogout = () => base44.auth.logout('/');
   const handlePowerOff = () => {
     cancelSpeech();
     if (listening) stopListening();
@@ -140,7 +140,7 @@ export default function Vivi() {
         <motion.button
           onClick={toggleMic}
           whileTap={{ scale: 0.92 }}
-          className={`p-6 rounded-full border transition-all shadow-xl touch-manipulation relative ${conversationStarted ? 'bg-gradient-to-br from-emerald-500 to-green-600 border-green-300' : 'bg-white/10 border-white/20'}`}
+          className={`p-6 rounded-full border transition-all shadow-xl touch-manipulation relative ${conversationStarted ? 'bg-gradient-to-br from-emerald-500 to-green-600 border-green-300' : 'bg-white/10 border-white/20 hover:bg-white/15'}`}
           aria-label={conversationStarted ? 'Llamada en vivo' : 'Escuchar'}
         >
           {conversationStarted ? <PhoneCall className="w-7 h-7 text-white" /> : (listening ? <Mic className="w-7 h-7 text-white" /> : <MicOff className="w-7 h-7 text-white/80" />)}
